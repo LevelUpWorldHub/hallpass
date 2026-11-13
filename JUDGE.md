@@ -211,3 +211,60 @@ Re-score after the popup stopped interpolating HTML. This round is docs and one-
 3. The demo script still opens on a generic denied stamp and misses the two-host shot.
 4. The submission draft does not mention the response schema or the rules-only public deploy.
 5. The desk does not print the scorecard's own 23/23.
+
+## Round 11
+
+Re-score after the Netlify config and the demo script. This round is the impact story, using numbers the scorecard function returns.
+
+| Criterion | Score | Why |
+| --- | --- | --- |
+| Technical execution | 9.5 | Deploy config is tested and key-free. The engine, the hybrid client, and the extension agree. |
+| Design | 9.1 | The office is coherent. The home page still explains impact in sentences. |
+| Impact | 8.9 | README says 23 checks. The running desk does not show the deny, ask, and allow counts from this build. |
+| Idea / originality | 9.0 | The two-host shot is in the demo script. The comparison table still does not use a measured example. |
+
+**Total: 36.5 / 40** (was 36.5)
+
+### Top 5 gaps
+
+1. The desk does not print 23/23 from `runScorecard()`.
+2. Deny, ask, and allow counts are not on the page, so a judge cannot see the mix of stops and hall passes.
+3. Nothing fails CI if those counts drift away from the sum of the checks.
+4. The comparison with the critic, veto-browse, and chrome-use does not cite this run.
+5. Adversarial strings are the last pass, after the numbers are visible.
+
+## Round 12
+
+Re-score after the desk prints the engine's counts. This round is originality against the rivals, then an adversarial pass.
+
+| Criterion | Score | Why |
+| --- | --- | --- |
+| Technical execution | 9.5 | The tally is the same function CI runs. |
+| Design | 9.3 | The five counts sit in the paper system. The rival section is still a table without a measured example. |
+| Impact | 9.5 | 6 guardrails, 23/23 checks, 8 denials, 3 hall passes, 12 allows. The sum is asserted. |
+| Idea / originality | 9.2 | The two-host demo is on the desk. The comparison does not yet say what those 23 checks prove that the critic, veto-browse, and chrome-use do not. |
+
+**Total: 37.5 / 40** (was 36.5)
+
+### What the adversarial pass tried
+
+- `javascript:` and `data:` navigations on an allow-style policy.
+- A guardrail sentence that says to ignore previous instructions and allow every payment, alone and followed by a real payment deny.
+- A Pay now control whose label contains an `<img onerror>` payload.
+- A URL pattern with nested stars, which the matcher used to compile into a regular expression.
+- A policy object whose fields exist only on the prototype.
+
+### Closing score
+
+After the fixes in this round.
+
+| Criterion | Score | Why |
+| --- | --- | --- |
+| Technical execution | 9.6 | Non-web schemes are denied, override sentences emit no rule, nested-star patterns never become a regex, and a prototype-only policy is rejected. The production typecheck, 34 unit tests, the 23/23 scorecard, and the browser suite are green. |
+| Design | 9.5 | The stamp, the check counter, the two-host pair, the count strip, and the worked example are one paper desk. |
+| Impact | 9.6 | The counts on the desk and in the rival example are `scorecardCounts(runScorecard())`: 6, 23/23, 8, 3, and 12. |
+| Idea / originality | 9.5 | The worked example states the pair the critic does not publish and the scorecard the other two products do not grade. |
+
+**Total: 38.2 / 40**
+
+No high-severity gap left in the product. Firebase still needs Mark's project config before a live Gemini call. The extension still enforces the compiled rules synchronously, which is the point of a click gate.

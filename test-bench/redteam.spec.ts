@@ -15,6 +15,8 @@ test("the desk states the problem", async ({ page }) => {
   await expect(page.getByTestId("lookalike-pair")).toContainText("Allowed");
   await expect(page.getByTestId("lookalike-pair")).toContainText("Denied");
   await expect(page.getByTestId("lookalike-pair")).toContainText("paypa1.com");
+  await expect(page.getByTestId("proof-strip")).toContainText("23");
+  await expect(page.getByTestId("proof-strip")).toContainText("8");
 });
 
 test("a desk check lands in the ledger", async ({ page }) => {
@@ -31,7 +33,7 @@ test("the first three checks step through deny, ask, and deny", async ({ page })
   await expect(page.getByTestId("first-drill-decision")).toContainText("require_approval");
   await page.getByRole("button", { name: "Lookalike check" }).click();
   await expect(page.getByTestId("first-drill-decision")).toContainText("deny");
-  await expect(page.getByText("paypa1.com")).toBeVisible();
+  await expect(page.locator("#first-drill")).toContainText("paypa1.com");
 });
 
 test("the rules scorecard passes", async ({ page }) => {

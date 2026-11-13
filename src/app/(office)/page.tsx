@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ComparisonTable } from "@/components/comparison";
 import { FirstDrill } from "@/components/first-drill";
 import { LookalikePair } from "@/components/lookalike-pair";
+import { ProofStrip } from "@/components/proof-strip";
+import { WorkedExample } from "@/components/worked-example";
 import { Button } from "@/components/ui/button";
 
 const STEPS = [
@@ -56,6 +58,7 @@ export default function DeskPage() {
         </div>
       </section>
 
+      <ProofStrip />
       <LookalikePair />
 
       <section className="mx-auto grid max-w-6xl gap-4 px-5 py-12 md:grid-cols-3">
@@ -82,6 +85,7 @@ export default function DeskPage() {
           </Link>
         </div>
         <ComparisonTable />
+        <WorkedExample />
         <p className="mt-4 text-xs leading-5 text-muted-foreground">
           Sources: Google&apos;s agentic-browsing security note, the veto-browse repository, and the
           chrome-use repository. HallPass does not redact page text. That job belongs to PlainSight.

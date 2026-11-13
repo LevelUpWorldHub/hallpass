@@ -131,6 +131,11 @@ function compileSentence(sentence: string, index: number): { rules: PolicyRule[]
   const warnings: string[] = [];
   const text = sentence.toLowerCase();
 
+  if (/\bignore (all |any )?(previous |prior |above |these )?instructions\b/.test(text)) {
+    warnings.push("Ignored a sentence that tries to override the compiler.");
+    return { rules: [], warnings };
+  }
+
   if (/\b(redact|mask|anonymize|anonymise)\b/.test(text) || /\b(pii|ssn|social security)\b/.test(text)) {
     warnings.push(PII_BOUNDARY);
     return { rules: [], warnings };

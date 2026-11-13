@@ -75,6 +75,28 @@ export function runScorecard(scenarios: Scenario[] = SCENARIOS, now = "2026-01-0
   };
 }
 
+export interface ScorecardCounts {
+  guardrails: number;
+  checks: number;
+  passed: number;
+  denies: number;
+  asks: number;
+  allows: number;
+}
+
+/** Counts taken from a scorecard the engine just produced. */
+export function scorecardCounts(card: Scorecard): ScorecardCounts {
+  const decisions = card.results.flatMap((result) => result.steps.map((step) => step.actual));
+  return {
+    guardrails: card.results.length,
+    checks: card.totalChecks,
+    passed: card.passedChecks,
+    denies: decisions.filter((decision) => decision === "deny").length,
+    asks: decisions.filter((decision) => decision === "require_approval").length,
+    allows: decisions.filter((decision) => decision === "allow").length,
+  };
+}
+
 export function formatScorecard(card: Scorecard): string {
   const lines = [
     "HallPass scorecard  (rules only)",
