@@ -7,9 +7,16 @@ import { formatScorecard, runScorecard, type Scorecard } from "@/hallpass/scorec
 
 export default function BenchPage() {
   const [card, setCard] = useState<Scorecard | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   function run() {
-    setCard(runScorecard());
+    try {
+      setCard(runScorecard());
+      setError(null);
+    } catch (caught) {
+      setCard(null);
+      setError(caught instanceof Error ? caught.message : "The scorecard failed.");
+    }
   }
 
   const grade = !card ? "—" : card.pass ? "Pass" : "Fail";
@@ -25,6 +32,11 @@ export default function BenchPage() {
             same scorecard with no model, no Firebase key, and no browser agent.
           </p>
         </div>
+        {error ? (
+          <p role="alert" className="max-w-xl text-sm text-red-800">
+            {error}
+          </p>
+        ) : null}
         <Button type="button" className="rounded-full" onClick={run}>
           Run scorecard
         </Button>

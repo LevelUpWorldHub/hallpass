@@ -125,3 +125,24 @@ Re-score after the stamp, the check counter, and the colored decisions. This rou
 3. The moment is not labeled for the video. A judge scanning for ten seconds can miss it under the three steps.
 4. The pair is not in the Playwright path, so a regression can delete it without CI noticing.
 5. The desk still does not say how many checks the full red team runs. That number belongs next to the moment.
+
+## Round 7
+
+Re-score after the lookalike pair. This round is robustness.
+
+| Criterion | Score | Why |
+| --- | --- | --- |
+| Technical execution | 9.3 | The pair is produced by the same compiler and engine as the scorecard, and CI reads the two stamps. |
+| Design | 9.0 | The desk now shows the contrast a video needs. The rest of the office is already a coherent paper system. |
+| Impact | 8.6 | A visitor sees one denied lookalike. They still have to open the bench to learn the full pass count. |
+| Idea / originality | 8.8 | The demo is a thing Chrome's critic and a runtime veto do not stage. The writeup still has to say so next to the numbers. |
+
+**Total: 35.7 / 40** (was 35.0)
+
+### Top 5 gaps
+
+1. The scorecard page has no error state. A throw becomes a blank report.
+2. Credential-bearing and script URLs are not in the unit tests, so a host parser regression can start matching the userinfo or the scheme.
+3. A blank guardrail is only warned in the compiler. The test file does not lock the empty-rule outcome.
+4. Offline is invisible. With no network the rules engine still compiles, and the policies page should say so.
+5. The extension popup writes verdict reasons with innerHTML. That is the next round.

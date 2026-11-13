@@ -12,7 +12,7 @@ import { actionFromSubmit, fieldTypesFromControls } from "./fields";
 import { detectInjection, isHiddenStyle } from "./injection";
 import { lookalikeOf } from "./lookalike";
 import { formatScorecard, runScorecard } from "./scorecard";
-import { urlMatches } from "./url";
+import { hostOf, urlMatches } from "./url";
 import { check } from "./index";
 import { policyFromModel } from "./schema";
 
@@ -25,6 +25,10 @@ describe("url patterns", () => {
     expect(urlMatches("*.gov", "https://irs.gov.evil.com/login")).toBe(false);
     expect(urlMatches("*.gov", "https://shop.example/deals")).toBe(false);
     expect(urlMatches("*.gov", "https://notgov.com")).toBe(false);
+    expect(hostOf("https://user:secret@irs.gov.evil.com/pay")).toBe("irs.gov.evil.com");
+    expect(urlMatches("*.gov", "https://user:secret@irs.gov.evil.com/pay")).toBe(false);
+    expect(urlMatches("*.gov", "javascript:alert(1)")).toBe(false);
+    expect(hostOf("https://www.irs.gov:443/forms")).toBe("www.irs.gov");
   });
 });
 
@@ -136,6 +140,12 @@ describe("rules compiler", () => {
   it("does not turn a redaction command into a deny rule", () => {
     const policy = compileRules("Never redact SSNs.", { now: NOW });
     expect(policy.rules).toHaveLength(0);
+  });
+
+  it("emits no rule for a blank guardrail", () => {
+    expect(compileRules("", { now: NOW }).rules).toEqual([]);
+    expect(compileRules("   ", { now: NOW }).rules).toEqual([]);
+    expect(compileRules("", { now: NOW }).warnings.length).toBeGreaterThan(0);
   });
 
   it("lets an ask on hidden instructions stay an ask", () => {

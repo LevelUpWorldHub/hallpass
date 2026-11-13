@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { InferenceBadge } from "@/components/inference-badge";
+import { OfflineNote } from "@/components/offline-note";
 import { useHallpass } from "@/components/hallpass-provider";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -76,6 +77,7 @@ function PolicyEditor({
 
   return (
     <main className="mx-auto max-w-6xl px-5 py-8">
+      <OfflineNote />
       <p className="text-[11px] font-semibold tracking-[0.22em] text-muted-foreground uppercase">Guardrails</p>
       <h1 className="font-display mt-2 text-4xl text-primary">Write the rule. Compile the pass.</h1>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
