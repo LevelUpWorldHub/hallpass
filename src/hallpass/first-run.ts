@@ -1,7 +1,7 @@
 import { compileRules } from "./compile-rules";
 import { evaluate } from "./engine";
 import { SCENARIOS } from "./scenarios";
-import type { Decision } from "./types";
+import type { AgentAction, Decision, Policy } from "./types";
 
 /** The three checks a first-time visitor should see before they read the rest of the desk. */
 export const FIRST_RUN_IDS = ["no-payment", "email-ask", "lookalike"] as const;
@@ -16,6 +16,8 @@ export interface FirstRunBeat {
   request: string;
   decision: Decision;
   reason: string;
+  action: AgentAction;
+  policy: Policy;
 }
 
 const LABELS: Record<(typeof FIRST_RUN_IDS)[number], string> = {
@@ -43,6 +45,8 @@ export function firstRunBeats(now = "2026-01-01T00:00:00.000Z"): FirstRunBeat[] 
       request: `${step.action.type.replace(/_/g, " ")} · ${requestLabel}`,
       decision: verdict.decision,
       reason: verdict.reason,
+      action: step.action,
+      policy,
     };
   });
 }

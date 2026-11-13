@@ -171,6 +171,8 @@ ${JSON.stringify(action)}`;
       model: "gemini-hybrid",
       policySource: policy.compiledBy,
       lookalikeOf: rulesVerdict.lookalikeOf,
+      rulesDecision: rulesVerdict.decision,
+      rulesReason: rulesVerdict.reason,
     };
   } catch (error) {
     const detail = error instanceof Error ? error.message : "model unavailable";

@@ -54,6 +54,9 @@ export default function BenchPage() {
                     <div>
                       <p className="font-medium">{result.title}</p>
                       <p className="text-xs text-muted-foreground">{result.guardrail}</p>
+                      <p className="mt-1 text-sm leading-6">
+                        {result.headline.name} → {result.headline.decision}. {result.headline.reason}
+                      </p>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className={result.pass ? "text-sm text-emerald-800" : "text-sm text-red-800"}>

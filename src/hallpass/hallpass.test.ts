@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { exportAuditJson } from "./audit";
+import { hybridFlags, hybridReady, hybridSlots } from "./config";
 import { compileRules } from "./compile-rules";
 import { evaluate, shouldGate } from "./engine";
 import { firstRunBeats } from "./first-run";
-import { raceDeviceDownload, readInferenceSource } from "./hybrid";
+import { disagreement, raceDeviceDownload, readInferenceSource } from "./hybrid";
 import { actionFromSubmit, fieldTypesFromControls } from "./fields";
 import { detectInjection, isHiddenStyle } from "./injection";
 import { lookalikeOf } from "./lookalike";
@@ -176,6 +177,34 @@ describe("scorecard", () => {
     expect(card.pass, formatScorecard(card)).toBe(true);
     expect(card.mode).toBe("rules");
     expect(card.totalChecks).toBeGreaterThan(15);
+    const payment = card.results.find((result) => result.id === "no-payment");
+    expect(payment?.headline.decision).toBe("deny");
+    expect(payment?.headline.reason.length).toBeGreaterThan(8);
+    expect(formatScorecard(card)).toContain("Pay button on checkout is denied → deny");
+  });
+});
+
+describe("hybrid readiness", () => {
+  it("reports missing slots without echoing secrets", () => {
+    const flags = hybridFlags({
+      NEXT_PUBLIC_FIREBASE_API_KEY: "secret-key",
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: "hallpass-dev",
+      NEXT_PUBLIC_FIREBASE_APP_ID: "",
+      NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY: "site-key",
+    });
+    expect(hybridReady(flags)).toBe(false);
+    expect(hybridSlots(flags).find((slot) => slot.id === "appId")?.present).toBe(false);
+    expect(JSON.stringify(hybridSlots(flags))).not.toContain("secret-key");
+    expect(hybridReady({ ...flags, appId: true })).toBe(true);
+    expect(hybridReady({ ...flags, appId: true, forcedRules: true })).toBe(false);
+  });
+});
+
+describe("model disagreement", () => {
+  it("speaks up only when the model and the rules engine differ", () => {
+    expect(disagreement({ decision: "deny", rulesDecision: "deny" })).toBeNull();
+    expect(disagreement({ decision: "allow", rulesDecision: "deny" })).toContain("rules engine would deny");
+    expect(disagreement({ decision: "deny" })).toBeNull();
   });
 });
 

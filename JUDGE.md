@@ -20,3 +20,24 @@ Strict #BuildHybridAI scoring. Each criterion is 1–10 and weighted equally. Sc
 3. The gate and the model boundary are under-tested. `shouldGate`, a non-JSON model reply, and inference-source parsing have no unit coverage, so a refactor can ship a gate that pauses every click or a badge that lies.
 4. Verdict changes are not announced. The red-team stamp is visual. The decision text that tests read is `sr-only`, and the desk has no live region for the result of a check.
 5. The README opens on architecture. A judge with three minutes is not told to press one button and watch three checks before reading Firebase setup.
+
+## Round 2
+
+Judged after the desk drill, the warm-up retry, and the gate tests.
+
+| Criterion | Score | Why |
+| --- | --- | --- |
+| Technical execution | 7 | The warm-up no longer treats a timeout as success, a failed Nano setup still reaches `generateContent`, and tests lock `shouldGate`, bad model JSON, and `inferenceSource`. The model can still overrule a tested rule with no side-by-side record. The scorecard still throws away the reason text after grading. |
+| Design | 8 | The first screen plays three real checks, the nav has a skip link and `aria-current`, and verdicts are in a live region. The report card is still a pile of Pass 4/4. The nav badge "Rules only" reads like a missing entry instead of a checklist of what Compile is waiting on. |
+| Impact | 7 | A visitor now watches a payment die, a send wait, and a lookalike die, without a key. The ledger stays empty after that, and the scorecard does not say which action mattered, so the proof is a number. |
+| Idea / originality | 8 | The workbench-for-any-agent idea was already distinct. It is now the first thing on the desk. It is still one step short of obvious on the scorecard, where the original claim (grade the guardrail before you trust it) should show the sentence that passed. |
+
+**Total: 30 / 40** (was 26)
+
+### Top 5 gaps
+
+1. Scorecard rows show a fraction and hide the headline decision and its one-line reason. That reason is the product.
+2. "Rules only" does not say which Firebase and App Check slots are empty. A judge cannot see the hybrid path without reading the README.
+3. A hybrid verdict can contradict the rules engine and leave no trace of what the tested policy would have done.
+4. Passing rows are silent. Only failures list the step. A perfect card teaches nothing.
+5. Playing the three checks does not write the ledger, so the audit trail is still a separate tour.

@@ -140,6 +140,7 @@ export default function SdkPage() {
               decision={verdict.decision}
               inference={verdict.inference}
               policySource={verdict.policySource}
+              rulesDecision={verdict.rulesDecision}
             />
           </div>
         ) : null}

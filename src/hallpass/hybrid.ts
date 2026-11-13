@@ -1,3 +1,5 @@
+import type { Verdict } from "./types";
+
 /**
  * Pure helpers for the Firebase AI Logic hybrid path.
  * The browser client in firebase.ts is the only place that calls the SDK.
@@ -34,4 +36,12 @@ export async function raceDeviceDownload(download: Promise<void>, timeout: Promi
   }
   if (outcome?.status === "ready") return "ready";
   return "pending";
+}
+
+/** One sentence when the model and the tested rules engine disagree. */
+export function disagreement(verdict: Pick<Verdict, "decision" | "rulesDecision">): string | null {
+  if (!verdict.rulesDecision || verdict.rulesDecision === verdict.decision) return null;
+  const rules = verdict.rulesDecision === "require_approval" ? "ask for a hall pass" : verdict.rulesDecision;
+  const model = verdict.decision === "require_approval" ? "ask for a hall pass" : verdict.decision;
+  return `The rules engine would ${rules}. The model said ${model}.`;
 }

@@ -14,6 +14,14 @@ test("the desk states the problem", async ({ page }) => {
   await expect(page.getByTestId("first-drill-decision")).toContainText("deny");
 });
 
+test("a desk check lands in the ledger", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Mail check" }).click();
+  await page.getByRole("link", { name: "Ledger" }).click();
+  await expect(page.getByText("The hall is quiet.")).toHaveCount(0);
+  await expect(page.getByText("Hall pass").first()).toBeVisible();
+});
+
 test("the first three checks step through deny, ask, and deny", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Mail check" }).click();
@@ -28,6 +36,7 @@ test("the rules scorecard passes", async ({ page }) => {
   await page.getByRole("button", { name: "Run scorecard" }).click();
   await expect(page.getByTestId("scorecard-summary")).toContainText("checks passed");
   await expect(page.getByTestId("scorecard-grade")).toHaveText("Pass");
+  await expect(page.getByText("Pay button on checkout is denied → deny. Stopped.")).toBeVisible();
 });
 
 test("compiling without Firebase keeps the rules badge", async ({ page }) => {
@@ -37,6 +46,8 @@ test("compiling without Firebase keeps the rules badge", async ({ page }) => {
   await expect(page.getByText("No Firebase config. Compiled with the rules engine.")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Never download a file" })).toBeVisible();
   await expect(page.getByTestId("inference-badge").first()).toContainText("Rules");
+  await expect(page.getByTestId("hybrid-readiness")).toContainText("Missing");
+  await expect(page.getByTestId("hybrid-readiness")).toContainText("reCAPTCHA Enterprise site key");
 });
 
 const drills: Array<[string, string]> = [

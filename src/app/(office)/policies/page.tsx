@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { hybridFlags, hybridReady, hybridSlots } from "@/hallpass/config";
 import { compileGuardrail } from "@/hallpass/firebase";
 import { DEMO_GUARDRAIL, TAX_GUARDRAIL } from "@/hallpass/scenarios";
 import type { Decision, Policy } from "@/hallpass/types";
@@ -81,6 +82,7 @@ function PolicyEditor({
         Plain English goes in. A JSON policy comes out. With Firebase configured, compilation prefers
         Gemini Nano in Chrome 139+ and falls back to cloud Gemini. This desk is on the {mode} path.
       </p>
+      <HybridChecklist />
 
       <div className="mt-6 flex flex-wrap gap-2">
         {policies.map((item) => (
@@ -187,6 +189,38 @@ function PolicyEditor({
         </section>
       </div>
     </main>
+  );
+}
+
+function HybridChecklist() {
+  const flags = hybridFlags({
+    NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+    NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY: process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY,
+    NEXT_PUBLIC_HALLPASS_INFERENCE: process.env.NEXT_PUBLIC_HALLPASS_INFERENCE,
+  });
+  const slots = hybridSlots(flags);
+  const ready = hybridReady(flags);
+  return (
+    <section className="mt-6 rounded-2xl border border-border bg-card p-4" data-testid="hybrid-readiness">
+      <h2 className="font-display text-xl text-primary">What Compile will call</h2>
+      <ul className="mt-3 grid gap-1 text-sm">
+        {slots.map((slot) => (
+          <li key={slot.id}>
+            <span className="font-medium">{slot.present ? "Ready" : "Missing"}</span>
+            <span className="text-muted-foreground"> · {slot.label}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-3 text-sm leading-6 text-muted-foreground">
+        {ready
+          ? "Compile prefers Gemini Nano in Chrome 139+ and falls back to cloud Gemini. App Check runs first."
+          : flags.forcedRules
+            ? "Inference is pinned to rules, so Compile will not call the model."
+            : "Compile stays on the rules engine until every slot is ready. The values stay in .env.local."}
+      </p>
+    </section>
   );
 }
 
