@@ -121,7 +121,11 @@ function PolicyEditor({
           {progress != null && busy ? (
             <p className="mt-3 text-xs text-muted-foreground">On-device model download {Math.round(progress * 100)}%</p>
           ) : null}
-          {note ? <p className="mt-3 text-sm leading-6 text-muted-foreground">{note}</p> : null}
+          {note ? (
+            <p className="mt-3 text-sm leading-6 text-muted-foreground" role="status">
+              {note}
+            </p>
+          ) : null}
         </section>
 
         <section>
@@ -156,7 +160,7 @@ function PolicyEditor({
             ) : null}
           </ul>
           {policy.warnings.length ? (
-            <ul className="mt-3 grid gap-2">
+            <ul className="mt-3 grid gap-2" role="alert">
               {policy.warnings.map((warning) => (
                 <li key={warning} className="text-sm leading-6 text-amber-900">
                   {warning}

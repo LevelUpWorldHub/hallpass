@@ -11,6 +11,16 @@ test("the desk states the problem", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("hall pass");
   await expect(page.getByRole("link", { name: "Write a guardrail" })).toBeVisible();
+  await expect(page.getByTestId("first-drill-decision")).toContainText("deny");
+});
+
+test("the first three checks step through deny, ask, and deny", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Mail check" }).click();
+  await expect(page.getByTestId("first-drill-decision")).toContainText("require_approval");
+  await page.getByRole("button", { name: "Lookalike check" }).click();
+  await expect(page.getByTestId("first-drill-decision")).toContainText("deny");
+  await expect(page.getByText("paypa1.com")).toBeVisible();
 });
 
 test("the rules scorecard passes", async ({ page }) => {

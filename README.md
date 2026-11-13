@@ -87,6 +87,14 @@ HallPass is an entry for Google's #BuildHybridAI hackathon. The deadline is Mond
 
 The default cloud model is the Firebase AI Logic default (`gemini-3.5-flash-lite` at the time of writing). HallPass does not pin a different one.
 
+## Sixty seconds on the desk
+
+1. `npm install` and `npm run dev`, then open [http://127.0.0.1:43123](http://127.0.0.1:43123).
+2. Press **Play the three checks**. A payment is denied, a send asks for a signature, and a lookalike checkout is denied. That pass uses the rules engine, so it works with an empty `.env.local`.
+3. Open **Test bench** and press **Run scorecard**. Six guardrails, 23 checks.
+4. Open **Guardrails** and press **Compile**. The badge stays **Rules** until Firebase and App Check are filled in. With them, the same button prefers Gemini Nano and falls back to cloud Gemini.
+5. Load `extension/dist` unpacked if you want the live gate on the red-team buttons. The desk drill and the scorecard do not need it.
+
 ## Run the desk
 
 ```bash

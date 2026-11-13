@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { exportAuditJson } from "./audit";
 import { compileRules } from "./compile-rules";
-import { evaluate } from "./engine";
+import { evaluate, shouldGate } from "./engine";
+import { firstRunBeats } from "./first-run";
+import { raceDeviceDownload, readInferenceSource } from "./hybrid";
 import { actionFromSubmit, fieldTypesFromControls } from "./fields";
 import { detectInjection, isHiddenStyle } from "./injection";
 import { lookalikeOf } from "./lookalike";
@@ -122,6 +124,52 @@ describe("rules compiler", () => {
   });
 });
 
+describe("extension gate", () => {
+  it("pauses submits, downloads, and sensitive clicks, and leaves ordinary clicks alone", () => {
+    const policy = compileRules("Never submit a payment form.", { now: NOW });
+    expect(shouldGate({ type: "form_submit", url: "https://shop.example/checkout" }, policy)).toBe(true);
+    expect(shouldGate({ type: "download", url: "https://files.example/receipt.pdf" }, policy)).toBe(true);
+    expect(shouldGate({ type: "click", url: "https://shop.example/checkout", buttonText: "Pay now" }, policy)).toBe(
+      true,
+    );
+    expect(shouldGate({ type: "click", url: "https://shop.example/catalog", buttonText: "Print" }, policy)).toBe(false);
+    expect(shouldGate({ type: "click", url: "https://shop.example/catalog", buttonText: "Print" }, null)).toBe(false);
+    const taxes = compileRules("Only browse *.gov while doing my taxes.", { now: NOW });
+    expect(shouldGate({ type: "navigate", url: "https://shop.example/deals" }, taxes)).toBe(true);
+  });
+});
+
+describe("first-run drill", () => {
+  it("denies a payment, asks before mail, and denies a lookalike checkout", () => {
+    const beats = firstRunBeats(NOW);
+    expect(beats.map((beat) => beat.decision)).toEqual(["deny", "require_approval", "deny"]);
+    expect(beats.map((beat) => beat.id)).toEqual(["no-payment", "email-ask", "lookalike"]);
+  });
+});
+
+describe("hybrid inference helpers", () => {
+  it("reads on-device and cloud sources and ignores anything else", () => {
+    expect(readInferenceSource("on_device")).toBe("on_device");
+    expect(readInferenceSource("in_cloud")).toBe("cloud");
+    expect(readInferenceSource(undefined)).toBeNull();
+    expect(readInferenceSource("rules")).toBeNull();
+  });
+
+  it("treats a timeout as pending and a rejection as a failure", async () => {
+    let release: () => void = () => {};
+    const slow = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await expect(raceDeviceDownload(slow, Promise.resolve())).resolves.toBe("pending");
+    release();
+
+    await expect(raceDeviceDownload(Promise.resolve(), new Promise<void>(() => {}))).resolves.toBe("ready");
+    await expect(raceDeviceDownload(Promise.reject(new Error("no nano")), new Promise<void>(() => {}))).rejects.toThrow(
+      "no nano",
+    );
+  });
+});
+
 describe("scorecard", () => {
   it("passes every bundled guardrail in rules-only mode", () => {
     const card = runScorecard();
@@ -158,6 +206,10 @@ describe("model policy parser", () => {
     expect(policy.compiledBy).toBe("on_device");
     expect(policy.model).toBe("gemini-hybrid");
     expect(policy.rules[0]?.decision).toBe("deny");
+  });
+
+  it("rejects a reply that is not a policy", () => {
+    expect(() => policyFromModel("the agent may proceed", "Never submit a payment form.", "cloud")).toThrow();
   });
 });
 

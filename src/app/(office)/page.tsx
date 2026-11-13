@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ComparisonTable } from "@/components/comparison";
-import { HallPassCard } from "@/components/hall-pass-card";
+import { FirstDrill } from "@/components/first-drill";
 import { Button } from "@/components/ui/button";
 
 const STEPS = [
@@ -38,22 +38,20 @@ export default function DeskPage() {
               workbench for writing those guardrails, grading them on a red team, and enforcing them for
               any agent that acts in the page.
             </p>
+            <p className="mt-4 max-w-xl text-sm leading-6 text-muted-foreground">
+              Press play. Three scripted actions run against three guardrails. No Firebase key and no
+              extension are required for this pass.
+            </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg" className="h-11 rounded-full px-5">
-                <Link href="/policies">Write a guardrail</Link>
+                <Link href="#first-drill">Watch the first three checks</Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="h-11 rounded-full px-5">
-                <Link href="/bench">Run the scorecard</Link>
+                <Link href="/policies">Write a guardrail</Link>
               </Button>
             </div>
           </div>
-          <HallPassCard
-            destination="https://shop.example/checkout"
-            request="Submit payment form · Pay now"
-            reason="Stopped. Never submit a payment form."
-            decision="deny"
-            inference="rules"
-          />
+          <FirstDrill />
         </div>
       </section>
 
