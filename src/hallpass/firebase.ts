@@ -138,7 +138,7 @@ export async function compileGuardrail(
     const prompt = `${COMPILE_PROMPT}${sourceText.trim()}`;
     const counted = await generative.countTokens(prompt).catch(() => null);
     const result = await generative.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      contents: [{ role: "user", parts: [{ type: "text", text: prompt }] }],
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema: policyResponseSchema(),
@@ -187,7 +187,7 @@ ${JSON.stringify({ name: policy.name, defaultDecision: policy.defaultDecision, r
 Action:
 ${JSON.stringify(action)}`;
     const result = await generative.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      contents: [{ role: "user", parts: [{ type: "text", text: prompt }] }],
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema: verdictResponseSchema(),

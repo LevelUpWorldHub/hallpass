@@ -146,3 +146,26 @@ Re-score after the lookalike pair. This round is robustness.
 3. A blank guardrail is only warned in the compiler. The test file does not lock the empty-rule outcome.
 4. Offline is invisible. With no network the rules engine still compiles, and the policies page should say so.
 5. The extension popup writes verdict reasons with innerHTML. That is the next round.
+
+## Round 8
+
+Re-score after the offline note, the blank-guardrail lock, and the scorecard error. This round is accessibility and performance.
+
+| Criterion | Score | Why |
+| --- | --- | --- |
+| Technical execution | 9.4 | Production typecheck now passes. Text parts carry `type: "text"`, and the Nano download race returns a tagged result instead of a closure the compiler treats as `never`. |
+| Design | 9.1 | Heading order on the ticket matches the page, the comparison table has a caption and row headers, and muted text is darker on the paper. |
+| Impact | 8.7 | The product is measurable. The desk still does not print the scorecard's own counts. |
+| Idea / originality | 8.8 | Unchanged. The lookalike pair is the original demo. The writeup still has to put it next to the rivals. |
+
+**Total: 36.0 / 40** (was 35.7)
+
+Lighthouse on the production desk, mobile, `http://127.0.0.1:43129/`: performance 96, accessibility 100, best practices 100, SEO 100. The guardrails page scored accessibility 100 and best practices 100.
+
+### Top 5 gaps
+
+1. The extension popup interpolates `verdict.reason` into `innerHTML`. A policy reason with markup becomes HTML.
+2. The content script escapes overlay text. The popup does not share that escape.
+3. The extension manifest does not declare an extension-page content security policy.
+4. There is no unit test that a reason containing `<img` stays text.
+5. The workbench still has no one-click deploy file, which is the following docs round after security.

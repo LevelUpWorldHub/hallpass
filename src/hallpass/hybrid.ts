@@ -20,21 +20,16 @@ export function readInferenceSource(source: string | undefined): "on_device" | "
  * It does not count as a finished warm-up.
  */
 export async function raceDeviceDownload(download: Promise<void>, timeout: Promise<void>): Promise<DeviceWarmth> {
-  let outcome: { status: "ready" } | { status: "failed"; error: unknown } | null = null;
   const tracked = download.then(
-    () => {
-      outcome = { status: "ready" };
-    },
-    (error: unknown) => {
-      outcome = { status: "failed", error };
-    },
+    () => ({ status: "ready" as const }),
+    (error: unknown) => ({ status: "failed" as const, error }),
   );
-  await Promise.race([tracked, timeout]);
-  if (outcome?.status === "failed") {
-    const error = outcome.error;
-    throw error instanceof Error ? error : new Error("On-device model setup failed.");
+  const timeoutMark = timeout.then(() => ({ status: "pending" as const }));
+  const outcome = await Promise.race([tracked, timeoutMark]);
+  if (outcome.status === "failed") {
+    throw outcome.error instanceof Error ? outcome.error : new Error("On-device model setup failed.");
   }
-  if (outcome?.status === "ready") return "ready";
+  if (outcome.status === "ready") return "ready";
   return "pending";
 }
 

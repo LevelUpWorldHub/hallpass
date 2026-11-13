@@ -33,7 +33,7 @@ export function HallPassCard({
           <p className="text-[11px] font-semibold tracking-[0.22em] text-muted-foreground uppercase">
             Hall pass · {serial}
           </p>
-          <h3 className="font-display mt-1 text-2xl text-primary">One action, one signature.</h3>
+          <p className="font-display mt-1 text-2xl text-primary">One action, one signature.</p>
           <dl className="mt-4 grid gap-2 text-sm">
             <div className="grid grid-cols-[6.5rem_1fr] gap-2">
               <dt className="text-muted-foreground">Who</dt>
