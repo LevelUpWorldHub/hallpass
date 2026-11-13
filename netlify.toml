@@ -1,0 +1,19 @@
+# One-click and CLI deploys. Netlify's Next.js runtime reads `.next`.
+# Public demo stays on the rules engine until Firebase env vars are set in the Netlify UI.
+# Do not put API keys in this file.
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NEXT_PUBLIC_HALLPASS_INFERENCE = "rules"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"

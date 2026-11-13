@@ -10,23 +10,30 @@ import {
   InferenceSource,
   type GenerativeModel,
 } from "firebase/ai";
+import {
+  CLOUD_MODEL,
+  HALLPASS_SYSTEM_INSTRUCTION,
+  policyResponseSchema,
+  verdictResponseSchema,
+} from "./hybrid-schema";
 import { firebasePublicConfig, hybridConfigured, preferredMode, recaptchaSiteKey } from "./config";
 import { compileRules } from "./compile-rules";
 import { evaluate } from "./engine";
+import { raceDeviceDownload, readInferenceSource } from "./hybrid";
 import { policyFromModel, modelVerdictSchema, extractJson } from "./schema";
-import type { AgentAction, InferenceSource as HallpassSource, Policy, Verdict } from "./types";
+import type { AgentAction, Policy, Verdict } from "./types";
 
 export { firebasePublicConfig, hybridConfigured, preferredMode, recaptchaSiteKey };
 
 let app: FirebaseApp | null = null;
 let appCheck: AppCheck | null = null;
 let model: GenerativeModel | null = null;
-let deviceInit: Promise<void> | null = null;
+let deviceDownload: Promise<void> | null = null;
 
-function readSource(source: string | undefined): Exclude<HallpassSource, "rules"> | null {
-  if (source === InferenceSource.ON_DEVICE || source === "on_device") return "on_device";
-  if (source === InferenceSource.IN_CLOUD || source === "in_cloud") return "cloud";
-  return null;
+function readSource(source: string | undefined): "on_device" | "cloud" | null {
+  if (source === InferenceSource.ON_DEVICE) return "on_device";
+  if (source === InferenceSource.IN_CLOUD) return "cloud";
+  return readInferenceSource(source);
 }
 
 export function ensureFirebase(): GenerativeModel {
@@ -50,7 +57,14 @@ export function ensureFirebase(): GenerativeModel {
     appCheck = null;
   }
   const ai = getAI(app, { backend: new GoogleAIBackend() });
-  model = getGenerativeModel(ai, { mode: InferenceMode.PREFER_ON_DEVICE });
+  model = getGenerativeModel(ai, {
+    mode: InferenceMode.PREFER_ON_DEVICE,
+    inCloudParams: {
+      model: CLOUD_MODEL,
+      systemInstruction: HALLPASS_SYSTEM_INSTRUCTION,
+      generationConfig: { responseMimeType: "application/json" },
+    },
+  });
   void appCheck;
   return model;
 }
@@ -59,17 +73,29 @@ export function ensureFirebase(): GenerativeModel {
  * Must run from a click or keypress. Does not wait out a multi-minute Nano
  * download: PREFER_ON_DEVICE falls back to cloud if the on-device model is not ready.
  */
-export async function warmDeviceModel(onProgress?: (progress: number) => void): Promise<void> {
+export async function warmDeviceModel(onProgress?: (progress: number) => void): Promise<"ready" | "pending"> {
   const generative = ensureFirebase();
-  if (!deviceInit) {
-    deviceInit = Promise.race([
-      generative.initializeDeviceModel((value) => onProgress?.(value)).catch(() => undefined),
+  if (!deviceDownload) {
+    deviceDownload = generative.initializeDeviceModel((value) => onProgress?.(value)).then(
+      () => undefined,
+      (error: unknown) => {
+        deviceDownload = null;
+        throw error;
+      },
+    );
+  }
+  const current = deviceDownload;
+  try {
+    return await raceDeviceDownload(
+      current,
       new Promise<void>((resolve) => {
         window.setTimeout(resolve, 2500);
       }),
-    ]);
+    );
+  } catch (error) {
+    if (deviceDownload === current) deviceDownload = null;
+    throw error;
   }
-  await deviceInit;
 }
 
 const COMPILE_PROMPT = `Compile the guardrail into JSON. Reply with JSON only, no markdown.
@@ -98,10 +124,32 @@ export async function compileGuardrail(
     return { policy: rulesPolicy, note };
   }
   try {
-    await warmDeviceModel(onProgress);
     const generative = ensureFirebase();
-    const result = await generative.generateContent(`${COMPILE_PROMPT}${sourceText.trim()}`);
+    let warmNote: string | undefined;
+    try {
+      const warmth = await warmDeviceModel(onProgress);
+      if (warmth === "pending") {
+        warmNote = "Gemini Nano is still downloading. This call can fall back to cloud Gemini.";
+      }
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : "On-device setup failed.";
+      warmNote = `${detail} Asking cloud Gemini through the same hybrid model.`;
+    }
+    const prompt = `${COMPILE_PROMPT}${sourceText.trim()}`;
+    const counted = await generative.countTokens(prompt).catch(() => null);
+    const result = await generative.generateContent({
+      contents: [{ role: "user", parts: [{ type: "text", text: prompt }] }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: policyResponseSchema(),
+      },
+    });
     const source = readSource(result.response.inferenceSource);
+    const usage = result.response.usageMetadata;
+    const usageNote =
+      usage || counted
+        ? `Tokens: prompt ${usage?.promptTokenCount ?? counted?.totalTokens ?? "?"}, candidates ${usage?.candidatesTokenCount ?? 0}.`
+        : undefined;
     const text = result.response.text();
     if (!source) {
       return {
@@ -109,8 +157,9 @@ export async function compileGuardrail(
         note: "The model answered, but the SDK did not report on-device or cloud. Kept the rules policy.",
       };
     }
-    const policy = policyFromModel(text, sourceText, source, { model: "gemini-hybrid" });
-    return { policy };
+    const policy = policyFromModel(text, sourceText, source, { model: CLOUD_MODEL });
+    const note = [source === "cloud" ? warmNote : undefined, usageNote].filter(Boolean).join(" ");
+    return { policy, note: note || undefined };
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Hybrid inference failed.";
     return {
@@ -124,7 +173,11 @@ export async function classifyWithHybrid(action: AgentAction, policy: Policy): P
   const rulesVerdict = evaluate(policy, action);
   if (preferredMode() === "rules") return rulesVerdict;
   try {
-    await warmDeviceModel();
+    try {
+      await warmDeviceModel();
+    } catch {
+      // A failed Nano download must not skip the cloud fallback on this same model.
+    }
     const generative = ensureFirebase();
     const prompt = `You are HallPass, a hall monitor for a browser agent. Judge this one action against the policy.
 Reply with JSON only: {"decision":"allow"|"deny"|"require_approval","reason":string,"ruleId":string|null}
@@ -133,7 +186,13 @@ Policy:
 ${JSON.stringify({ name: policy.name, defaultDecision: policy.defaultDecision, rules: policy.rules })}
 Action:
 ${JSON.stringify(action)}`;
-    const result = await generative.generateContent(prompt);
+    const result = await generative.generateContent({
+      contents: [{ role: "user", parts: [{ type: "text", text: prompt }] }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: verdictResponseSchema(),
+      },
+    });
     const source = readSource(result.response.inferenceSource);
     if (!source) return rulesVerdict;
     const parsed = modelVerdictSchema.parse(extractJson(result.response.text()));
@@ -142,9 +201,11 @@ ${JSON.stringify(action)}`;
       reason: parsed.reason,
       ruleId: parsed.ruleId ?? undefined,
       inference: source,
-      model: "gemini-hybrid",
+      model: source === "on_device" ? "gemini-nano" : CLOUD_MODEL,
       policySource: policy.compiledBy,
       lookalikeOf: rulesVerdict.lookalikeOf,
+      rulesDecision: rulesVerdict.decision,
+      rulesReason: rulesVerdict.reason,
     };
   } catch (error) {
     const detail = error instanceof Error ? error.message : "model unavailable";

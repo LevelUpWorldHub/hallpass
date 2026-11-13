@@ -61,11 +61,16 @@ export function ComparisonTable() {
   return (
     <div className="overflow-x-auto rounded-2xl border border-border bg-card">
       <table className="w-full min-w-[760px] border-collapse text-left text-sm">
+        <caption className="sr-only">
+          HallPass compared with Chrome&apos;s User Alignment Critic, veto-browse, and chrome-use
+        </caption>
         <thead>
           <tr className="border-b border-border bg-secondary/70">
-            <th className="p-3 font-medium"> </th>
+            <th className="p-3 font-medium" scope="col">
+              <span className="sr-only">Topic</span>
+            </th>
             {HEADS.map((head) => (
-              <th key={head} className="p-3 font-medium">
+              <th key={head} className="p-3 font-medium" scope="col">
                 {head}
               </th>
             ))}
@@ -74,7 +79,9 @@ export function ComparisonTable() {
         <tbody>
           {ROWS.map((row) => (
             <tr key={row.topic} className="border-b border-border align-top last:border-0">
-              <th className="p-3 font-medium whitespace-nowrap">{row.topic}</th>
+              <th className="p-3 font-medium whitespace-nowrap" scope="row">
+                {row.topic}
+              </th>
               {row.cells.map((cell, index) => (
                 <td key={HEADS[index]} className="p-3 leading-6 text-muted-foreground">
                   <span className="text-foreground">{cell}</span>

@@ -1,7 +1,7 @@
 import { detectInjection } from "./injection";
 import { lookalikeOf } from "./lookalike";
 import type { AgentAction, Decision, Policy, PolicyRule, Verdict } from "./types";
-import { actionUrl, urlMatches } from "./url";
+import { actionUrl, isHttpUrl, urlMatches } from "./url";
 
 const RESTRICTIVENESS: Record<Decision, number> = {
   deny: 3,
@@ -67,6 +67,15 @@ export function evaluate(policy: Policy, action: AgentAction): Verdict {
     return {
       decision: "allow",
       reason: "The action had no URL, so the gate left it alone.",
+      inference: "rules",
+      policySource: policy.compiledBy,
+    };
+  }
+
+  if (!isHttpUrl(actionUrl(action))) {
+    return {
+      decision: "deny",
+      reason: "Only http and https URLs can get a hall pass.",
       inference: "rules",
       policySource: policy.compiledBy,
     };

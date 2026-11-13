@@ -32,6 +32,25 @@
   }
 
   // src/hallpass/url.ts
+  function isHttpUrl(input) {
+    const trimmed = input.trim();
+    if (!trimmed) return false;
+    if (!/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return true;
+    try {
+      const protocol = new URL(trimmed).protocol;
+      return protocol === "http:" || protocol === "https:";
+    } catch {
+      return false;
+    }
+  }
+  function isSafeUrlPattern(pattern) {
+    const raw = pattern.trim().toLowerCase();
+    if (!raw || raw.length > 200) return false;
+    if (raw === "*" || raw === "*://*" || raw === "<all_urls>") return true;
+    const stars = raw.match(/\*/g)?.length ?? 0;
+    if (stars > 1) return false;
+    return /^[a-z0-9.*-]+$/.test(raw);
+  }
   function hostOf(input) {
     const trimmed = input.trim();
     if (!trimmed) return "";
@@ -50,8 +69,8 @@
     if (!raw || raw === "*" || raw === "*://*" || raw === "<all_urls>") return true;
     const host = hostOf(url);
     if (!host) return false;
-    let hostGlob = raw.replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/\.$/, "");
-    if (!hostGlob) return false;
+    const hostGlob = raw.replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/\.$/, "");
+    if (!hostGlob || !isSafeUrlPattern(hostGlob === raw ? raw : hostGlob)) return false;
     if (hostGlob.startsWith("*.")) {
       const suffix = hostGlob.slice(1);
       return host.endsWith(suffix) && host.length > suffix.length;
@@ -213,6 +232,14 @@
         policySource: policy.compiledBy
       };
     }
+    if (!isHttpUrl(actionUrl(action))) {
+      return {
+        decision: "deny",
+        reason: "Only http and https URLs can get a hall pass.",
+        inference: "rules",
+        policySource: policy.compiledBy
+      };
+    }
     const lookalike = lookalikeOf(action.targetUrl || action.url) ?? lookalikeOf(action.url);
     const injection = pageHasInjection(action);
     const matches = policy.rules.filter((rule) => ruleMatches(rule, action, lookalike, injection));
@@ -257,14 +284,46 @@
     return false;
   }
 
-  // extension/src/background.ts
-  var KEY = "hallpass";
-  var permits = /* @__PURE__ */ new Map();
+  // src/hallpass/policy-guard.ts
+  var DECISIONS = /* @__PURE__ */ new Set(["allow", "deny", "require_approval"]);
+  var ACTIONS = /* @__PURE__ */ new Set(["navigate", "click", "form_submit", "download"]);
+  var FIELDS = /* @__PURE__ */ new Set(["payment", "email_compose", "password", "credentials", "generic"]);
+  var SOURCES = /* @__PURE__ */ new Set(["on_device", "cloud", "rules"]);
+  function isStringArray(value) {
+    return Array.isArray(value) && value.every((item) => typeof item === "string");
+  }
+  function isRule(value) {
+    if (!value || typeof value !== "object") return false;
+    const rule = value;
+    if (typeof rule.id !== "string" || !rule.id) return false;
+    if (typeof rule.description !== "string" || typeof rule.reason !== "string" || !rule.reason) return false;
+    if (!DECISIONS.has(rule.decision)) return false;
+    if (!isStringArray(rule.actionTypes) || !rule.actionTypes.every((item) => ACTIONS.has(item))) return false;
+    if (!isStringArray(rule.urlPatterns) || !rule.urlPatterns.every(isSafeUrlPattern)) return false;
+    if (!isStringArray(rule.buttonIntents) || rule.buttonIntents.length > 24) return false;
+    if (rule.buttonIntents.some((intent) => intent.length > 64)) return false;
+    if (rule.reason.length > 2e3 || rule.description.length > 2e3) return false;
+    if (!isStringArray(rule.fieldTypes) || !rule.fieldTypes.every((item) => FIELDS.has(item))) return false;
+    if (typeof rule.whenPromptInjection !== "boolean" || typeof rule.whenLookalike !== "boolean") return false;
+    return true;
+  }
   function isPolicy(value) {
     if (!value || typeof value !== "object") return false;
     const policy = value;
-    return typeof policy.id === "string" && Array.isArray(policy.rules);
+    if (!Object.hasOwn(policy, "id") || typeof policy.id !== "string" || !policy.id) return false;
+    if (!Object.hasOwn(policy, "name") || typeof policy.name !== "string" || !policy.name) return false;
+    if (!Object.hasOwn(policy, "version") || policy.version !== 1) return false;
+    if (typeof policy.sourceText !== "string") return false;
+    if (!SOURCES.has(policy.compiledBy)) return false;
+    if (!DECISIONS.has(policy.defaultDecision)) return false;
+    if (!Array.isArray(policy.rules) || policy.rules.length > 100 || !policy.rules.every(isRule)) return false;
+    if (!Array.isArray(policy.warnings) || !policy.warnings.every((item) => typeof item === "string")) return false;
+    return true;
   }
+
+  // extension/src/background.ts
+  var KEY = "hallpass";
+  var permits = /* @__PURE__ */ new Map();
   async function read() {
     const stored = await chrome.storage.local.get(KEY);
     const value = stored[KEY];

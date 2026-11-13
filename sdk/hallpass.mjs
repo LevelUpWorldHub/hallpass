@@ -97,8 +97,13 @@ function reasonFor(decision, sentence) {
 function compileSentence(sentence, index) {
   const warnings = [];
   const text = sentence.toLowerCase();
+  if (/\bignore (all |any )?(previous |prior |above |these )?instructions\b/.test(text)) {
+    warnings.push("Ignored a sentence that tries to override the compiler.");
+    return { rules: [], warnings };
+  }
   if (/\b(redact|mask|anonymize|anonymise)\b/.test(text) || /\b(pii|ssn|social security)\b/.test(text)) {
     warnings.push(PII_BOUNDARY);
+    return { rules: [], warnings };
   }
   const injection = /hidden instruction|hides instructions|prompt injection|hidden instructions/.test(text);
   const lookalike = /look-?alike|typosquat|homoglyph/.test(text);
@@ -281,6 +286,25 @@ function detectInjection(text) {
 }
 
 // src/hallpass/url.ts
+function isHttpUrl(input) {
+  const trimmed = input.trim();
+  if (!trimmed) return false;
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return true;
+  try {
+    const protocol = new URL(trimmed).protocol;
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+function isSafeUrlPattern(pattern) {
+  const raw = pattern.trim().toLowerCase();
+  if (!raw || raw.length > 200) return false;
+  if (raw === "*" || raw === "*://*" || raw === "<all_urls>") return true;
+  const stars = raw.match(/\*/g)?.length ?? 0;
+  if (stars > 1) return false;
+  return /^[a-z0-9.*-]+$/.test(raw);
+}
 function hostOf(input) {
   const trimmed = input.trim();
   if (!trimmed) return "";
@@ -299,8 +323,8 @@ function urlMatches(pattern, url) {
   if (!raw || raw === "*" || raw === "*://*" || raw === "<all_urls>") return true;
   const host = hostOf(url);
   if (!host) return false;
-  let hostGlob = raw.replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/\.$/, "");
-  if (!hostGlob) return false;
+  const hostGlob = raw.replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/\.$/, "");
+  if (!hostGlob || !isSafeUrlPattern(hostGlob === raw ? raw : hostGlob)) return false;
   if (hostGlob.startsWith("*.")) {
     const suffix = hostGlob.slice(1);
     return host.endsWith(suffix) && host.length > suffix.length;
@@ -458,6 +482,14 @@ function evaluate(policy, action) {
     return {
       decision: "allow",
       reason: "The action had no URL, so the gate left it alone.",
+      inference: "rules",
+      policySource: policy.compiledBy
+    };
+  }
+  if (!isHttpUrl(actionUrl(action))) {
+    return {
+      decision: "deny",
+      reason: "Only http and https URLs can get a hall pass.",
       inference: "rules",
       policySource: policy.compiledBy
     };
@@ -823,12 +855,18 @@ function runScorecard(scenarios = SCENARIOS, now = "2026-01-01T00:00:00.000Z") {
       };
     });
     const passed = steps.filter((step) => step.pass).length;
+    const headlineStep = steps.find((step) => step.name === scenario.headline) ?? steps[0];
     return {
       id: scenario.id,
       title: scenario.title,
       guardrail: scenario.guardrail,
       page: scenario.page,
       steps,
+      headline: {
+        name: headlineStep?.name ?? scenario.headline,
+        decision: headlineStep?.actual ?? "allow",
+        reason: headlineStep?.reason ?? ""
+      },
       passed,
       failed: steps.length - passed,
       pass: passed === steps.length
@@ -855,6 +893,8 @@ async function check(action, options) {
       const detail = error instanceof Error ? error.message : "model unavailable";
       return {
         ...fallback,
+        rulesDecision: fallback.decision,
+        rulesReason: fallback.reason,
         reason: `${fallback.reason} Hybrid review failed (${detail}), so the rules engine decided.`
       };
     }

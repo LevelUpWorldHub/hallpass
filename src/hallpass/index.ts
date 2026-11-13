@@ -43,6 +43,8 @@ export async function check(action: AgentAction, options: CheckOptions): Promise
       const detail = error instanceof Error ? error.message : "model unavailable";
       return {
         ...fallback,
+        rulesDecision: fallback.decision,
+        rulesReason: fallback.reason,
         reason: `${fallback.reason} Hybrid review failed (${detail}), so the rules engine decided.`,
       };
     }

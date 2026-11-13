@@ -16,11 +16,27 @@
     if (policyNode) policyNode.textContent = state.policy?.name ?? "No policy yet";
     if (statusNode) statusNode.textContent = state.enabled ? "The gate is watching." : "Paused. Actions pass through.";
     if (toggle) toggle.textContent = state.enabled ? "Pause" : "Resume";
-    if (list) {
-      list.innerHTML = state.events.slice(0, 5).map(
-        (event) => `<li><strong>${label(event.verdict.decision)}</strong> \xB7 ${event.action.type}<br /><span class="muted">${event.verdict.reason}</span></li>`
-      ).join("");
-      if (!state.events.length) list.innerHTML = `<li class="muted">No knocks yet.</li>`;
+    if (list) fillEvents(list, state.events);
+  }
+  function fillEvents(list2, events) {
+    list2.replaceChildren();
+    const rows = events.slice(0, 5);
+    if (!rows.length) {
+      const empty = document.createElement("li");
+      empty.className = "muted";
+      empty.textContent = "No knocks yet.";
+      list2.append(empty);
+      return;
+    }
+    for (const event of rows) {
+      const item = document.createElement("li");
+      const strong = document.createElement("strong");
+      strong.textContent = label(event.verdict.decision);
+      const reason = document.createElement("span");
+      reason.className = "muted";
+      reason.textContent = event.verdict.reason;
+      item.append(strong, document.createTextNode(` \xB7 ${event.action.type}`), document.createElement("br"), reason);
+      list2.append(item);
     }
   }
   toggle?.addEventListener("click", () => {
@@ -37,7 +53,13 @@
     reader.onload = () => {
       try {
         const policy = JSON.parse(String(reader.result));
-        void chrome.runtime.sendMessage({ type: "import-policy", policy }).then(() => render());
+        void chrome.runtime.sendMessage({ type: "import-policy", policy }).then((response) => {
+          if (!response?.ok) {
+            if (statusNode) statusNode.textContent = "That file is not a HallPass policy.";
+            return;
+          }
+          void render();
+        });
       } catch {
         if (statusNode) statusNode.textContent = "That file is not a HallPass policy.";
       }

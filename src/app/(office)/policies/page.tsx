@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { InferenceBadge } from "@/components/inference-badge";
+import { OfflineNote } from "@/components/offline-note";
 import { useHallpass } from "@/components/hallpass-provider";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { hybridFlags, hybridReady, hybridSlots } from "@/hallpass/config";
 import { compileGuardrail } from "@/hallpass/firebase";
 import { DEMO_GUARDRAIL, TAX_GUARDRAIL } from "@/hallpass/scenarios";
 import type { Decision, Policy } from "@/hallpass/types";
@@ -75,12 +77,14 @@ function PolicyEditor({
 
   return (
     <main className="mx-auto max-w-6xl px-5 py-8">
+      <OfflineNote />
       <p className="text-[11px] font-semibold tracking-[0.22em] text-muted-foreground uppercase">Guardrails</p>
       <h1 className="font-display mt-2 text-4xl text-primary">Write the rule. Compile the pass.</h1>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
         Plain English goes in. A JSON policy comes out. With Firebase configured, compilation prefers
         Gemini Nano in Chrome 139+ and falls back to cloud Gemini. This desk is on the {mode} path.
       </p>
+      <HybridChecklist />
 
       <div className="mt-6 flex flex-wrap gap-2">
         {policies.map((item) => (
@@ -121,7 +125,11 @@ function PolicyEditor({
           {progress != null && busy ? (
             <p className="mt-3 text-xs text-muted-foreground">On-device model download {Math.round(progress * 100)}%</p>
           ) : null}
-          {note ? <p className="mt-3 text-sm leading-6 text-muted-foreground">{note}</p> : null}
+          {note ? (
+            <p className="mt-3 text-sm leading-6 text-muted-foreground" role="status">
+              {note}
+            </p>
+          ) : null}
         </section>
 
         <section>
@@ -156,7 +164,7 @@ function PolicyEditor({
             ) : null}
           </ul>
           {policy.warnings.length ? (
-            <ul className="mt-3 grid gap-2">
+            <ul className="mt-3 grid gap-2" role="alert">
               {policy.warnings.map((warning) => (
                 <li key={warning} className="text-sm leading-6 text-amber-900">
                   {warning}
@@ -183,6 +191,38 @@ function PolicyEditor({
         </section>
       </div>
     </main>
+  );
+}
+
+function HybridChecklist() {
+  const flags = hybridFlags({
+    NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+    NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY: process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY,
+    NEXT_PUBLIC_HALLPASS_INFERENCE: process.env.NEXT_PUBLIC_HALLPASS_INFERENCE,
+  });
+  const slots = hybridSlots(flags);
+  const ready = hybridReady(flags);
+  return (
+    <section className="mt-6 rounded-2xl border border-border bg-card p-4" data-testid="hybrid-readiness">
+      <h2 className="font-display text-xl text-primary">What Compile will call</h2>
+      <ul className="mt-3 grid gap-1 text-sm">
+        {slots.map((slot) => (
+          <li key={slot.id}>
+            <span className="font-medium">{slot.present ? "Ready" : "Missing"}</span>
+            <span className="text-muted-foreground"> · {slot.label}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-3 text-sm leading-6 text-muted-foreground">
+        {ready
+          ? "Compile prefers Gemini Nano in Chrome 139+ and falls back to cloud Gemini. App Check runs first."
+          : flags.forcedRules
+            ? "Inference is pinned to rules, so Compile will not call the model."
+            : "Compile stays on the rules engine until every slot is ready. The values stay in .env.local."}
+      </p>
+    </section>
   );
 }
 

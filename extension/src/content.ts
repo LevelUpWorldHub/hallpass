@@ -1,3 +1,4 @@
+import { escapeHtml } from "../../src/hallpass/escape";
 import { actionFromClick, actionFromSubmit, type ControlMeta } from "../../src/hallpass/fields";
 import { shouldGate } from "../../src/hallpass/engine";
 import { detectInjection, injectionExcerpt, isHiddenStyle } from "../../src/hallpass/injection";
@@ -177,13 +178,6 @@ function paint(verdict: Verdict, action: AgentAction, mode: "deny" | "ask"): Pro
       close();
       resolve(false);
     });
-  });
-}
-
-function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (char) => {
-    const map: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
-    return map[char] ?? char;
   });
 }
 

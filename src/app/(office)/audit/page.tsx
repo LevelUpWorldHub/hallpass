@@ -92,8 +92,8 @@ export default function AuditPage() {
         <div className="mt-6 rounded-2xl border border-dashed border-border p-8">
           <h2 className="font-display text-2xl text-primary">The hall is quiet.</h2>
           <p className="mt-2 max-w-lg text-sm leading-6 text-muted-foreground">
-            Replay a red-team drill or browse with the extension. Each intercepted action lands here with
-            its verdict and the badge that says who decided.
+            Play a check on the desk, replay a red-team drill, or browse with the extension. Each
+            intercepted action lands here with its verdict and the badge that says who decided.
           </p>
         </div>
       ) : (

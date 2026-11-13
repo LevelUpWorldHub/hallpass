@@ -1,4 +1,5 @@
 import { decisionLabel, decisionTone, InferenceBadge } from "@/components/inference-badge";
+import { disagreement } from "@/hallpass/hybrid";
 import type { Decision, InferenceSource } from "@/hallpass/types";
 
 export function HallPassCard({
@@ -10,6 +11,7 @@ export function HallPassCard({
   decision,
   inference,
   policySource,
+  rulesDecision,
 }: {
   serial?: string;
   who?: string;
@@ -19,8 +21,10 @@ export function HallPassCard({
   decision: Decision;
   inference: InferenceSource;
   policySource?: InferenceSource;
+  rulesDecision?: Decision;
 }) {
   const stamp = decision === "deny" ? "Denied" : decision === "require_approval" ? "Sign" : "Pass";
+  const aside = disagreement({ decision, rulesDecision });
   return (
     <article className="ticket relative overflow-hidden rounded-2xl border border-border pl-6">
       <div className="pass-stripe h-3" />
@@ -29,7 +33,7 @@ export function HallPassCard({
           <p className="text-[11px] font-semibold tracking-[0.22em] text-muted-foreground uppercase">
             Hall pass · {serial}
           </p>
-          <h3 className="font-display mt-1 text-2xl text-primary">One action, one signature.</h3>
+          <p className="font-display mt-1 text-2xl text-primary">One action, one signature.</p>
           <dl className="mt-4 grid gap-2 text-sm">
             <div className="grid grid-cols-[6.5rem_1fr] gap-2">
               <dt className="text-muted-foreground">Who</dt>
@@ -54,8 +58,13 @@ export function HallPassCard({
             </div>
           </dl>
           <p className="mt-4 text-sm leading-6">{reason}</p>
+          {aside ? (
+            <p className="mt-2 text-sm leading-6" role="status">
+              {aside}
+            </p>
+          ) : null}
         </div>
-        <p className={`stamp ${decisionTone(decision)}`} aria-label={decisionLabel(decision)}>
+        <p key={stamp} className={`stamp ${decisionTone(decision)}`} aria-label={decisionLabel(decision)}>
           {stamp}
         </p>
       </div>

@@ -18,6 +18,7 @@ export interface ScenarioResult {
   guardrail: string;
   page: string;
   steps: StepResult[];
+  headline: { name: string; decision: Decision; reason: string };
   passed: number;
   failed: number;
   pass: boolean;
@@ -46,12 +47,18 @@ export function runScorecard(scenarios: Scenario[] = SCENARIOS, now = "2026-01-0
       };
     });
     const passed = steps.filter((step) => step.pass).length;
+    const headlineStep = steps.find((step) => step.name === scenario.headline) ?? steps[0];
     return {
       id: scenario.id,
       title: scenario.title,
       guardrail: scenario.guardrail,
       page: scenario.page,
       steps,
+      headline: {
+        name: headlineStep?.name ?? scenario.headline,
+        decision: headlineStep?.actual ?? "allow",
+        reason: headlineStep?.reason ?? "",
+      },
       passed,
       failed: steps.length - passed,
       pass: passed === steps.length,
@@ -68,13 +75,38 @@ export function runScorecard(scenarios: Scenario[] = SCENARIOS, now = "2026-01-0
   };
 }
 
+export interface ScorecardCounts {
+  guardrails: number;
+  checks: number;
+  passed: number;
+  denies: number;
+  asks: number;
+  allows: number;
+}
+
+/** Counts taken from a scorecard the engine just produced. */
+export function scorecardCounts(card: Scorecard): ScorecardCounts {
+  const decisions = card.results.flatMap((result) => result.steps.map((step) => step.actual));
+  return {
+    guardrails: card.results.length,
+    checks: card.totalChecks,
+    passed: card.passedChecks,
+    denies: decisions.filter((decision) => decision === "deny").length,
+    asks: decisions.filter((decision) => decision === "require_approval").length,
+    allows: decisions.filter((decision) => decision === "allow").length,
+  };
+}
+
 export function formatScorecard(card: Scorecard): string {
   const lines = [
     "HallPass scorecard  (rules only)",
     "",
-    ...card.results.map((result) => {
+    ...card.results.flatMap((result) => {
       const mark = result.pass ? "PASS" : "FAIL";
-      return `${mark}  ${result.title.padEnd(42, " ")} ${result.passed}/${result.steps.length}`;
+      return [
+        `${mark}  ${result.title.padEnd(42, " ")} ${result.passed}/${result.steps.length}`,
+        `      ${result.headline.name} → ${result.headline.decision}`,
+      ];
     }),
     "",
   ];

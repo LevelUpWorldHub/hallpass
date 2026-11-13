@@ -81,11 +81,33 @@ Sources: [Architecting security for agentic capabilities in Chrome](https://blog
 HallPass is an entry for Google's #BuildHybridAI hackathon. The deadline is Monday, November 30, 2026, 2:00 PM PT.
 
 - **On device.** `getGenerativeModel` is created with `InferenceMode.PREFER_ON_DEVICE` (`mode: "prefer_on_device"`). That uses Gemini Nano through the Chrome Prompt API on Chrome 139 and newer. `initializeDeviceModel()` runs from the Compile click, which is the user gesture Chrome requires. The download can take several minutes the first time.
-- **Cloud fallback.** If Nano is missing or still downloading, the same call uses cloud Gemini. The SDK reports which path ran on `response.inferenceSource`: `on_device` or `in_cloud`. The workbench badge says On-device or Cloud from that field.
+- **Cloud fallback.** If Nano is missing or still downloading, the same call uses cloud Gemini (`gemini-3.5-flash-lite` on `inCloudParams`). The request sets `responseMimeType: application/json` and a `responseSchema`. The SDK reports which path ran on `response.inferenceSource`: `on_device` or `in_cloud`. Token use is read from `usageMetadata` after `countTokens`. The workbench badge says On-device or Cloud from that field.
 - **App Check.** Before any model call, the app calls `initializeAppCheck` with `ReCaptchaEnterpriseProvider`. Turn on enforcement for Firebase AI Logic in the console. Localhost uses the App Check debug provider, documented below. A debug token is never committed.
 - **Rules fallback.** `NEXT_PUBLIC_HALLPASS_INFERENCE=rules`, or a missing Firebase config, compiles and grades with the deterministic engine. GitHub Actions runs the scorecard this way. Twenty-three checks, no network, no key.
 
 The default cloud model is the Firebase AI Logic default (`gemini-3.5-flash-lite` at the time of writing). HallPass does not pin a different one.
+
+## Sixty seconds on the desk
+
+1. `npm install` and `npm run dev`, then open [http://127.0.0.1:43123](http://127.0.0.1:43123).
+2. Press **Play the three checks**. A payment is denied, a send asks for a signature, and a lookalike checkout is denied. That pass uses the rules engine, so it works with an empty `.env.local`.
+3. Open **Test bench** and press **Run scorecard**. The desk already prints the same tally: 6 guardrails, 23/23 checks, 8 denials, 3 hall passes, 12 waved through.
+4. Open **Guardrails** and press **Compile**. The badge stays **Rules** until Firebase and App Check are filled in. With them, the same button prefers Gemini Nano and falls back to cloud Gemini.
+5. Load `extension/dist` unpacked if you want the live gate on the red-team buttons. The desk drill and the scorecard do not need it.
+
+## Deploy
+
+The desk is a static-enough Next.js app: every page prerenders, and the rules engine needs no server secret.
+
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/LevelUpWorldHub/hallpass)
+
+The button uses the public mirror. From this tree, the same config is:
+
+```bash
+npx netlify deploy --build
+```
+
+`netlify.toml` builds with `npm run build`, publishes `.next`, pins Node 22, and forces rules mode so a public URL cannot call Gemini without keys you add yourself. To turn hybrid on, set the `NEXT_PUBLIC_FIREBASE_*` and `NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY` values in the Netlify UI, then clear `NEXT_PUBLIC_HALLPASS_INFERENCE`. Leave App Check debug off on that site. Response headers deny framing and sniffing.
 
 ## Run the desk
 

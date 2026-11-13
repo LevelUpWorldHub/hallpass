@@ -7,9 +7,16 @@ import { formatScorecard, runScorecard, type Scorecard } from "@/hallpass/scorec
 
 export default function BenchPage() {
   const [card, setCard] = useState<Scorecard | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   function run() {
-    setCard(runScorecard());
+    try {
+      setCard(runScorecard());
+      setError(null);
+    } catch (caught) {
+      setCard(null);
+      setError(caught instanceof Error ? caught.message : "The scorecard failed.");
+    }
   }
 
   const grade = !card ? "—" : card.pass ? "Pass" : "Fail";
@@ -25,6 +32,11 @@ export default function BenchPage() {
             same scorecard with no model, no Firebase key, and no browser agent.
           </p>
         </div>
+        {error ? (
+          <p role="alert" className="max-w-xl text-sm text-red-800">
+            {error}
+          </p>
+        ) : null}
         <Button type="button" className="rounded-full" onClick={run}>
           Run scorecard
         </Button>
@@ -54,6 +66,21 @@ export default function BenchPage() {
                     <div>
                       <p className="font-medium">{result.title}</p>
                       <p className="text-xs text-muted-foreground">{result.guardrail}</p>
+                      <p className="mt-1 text-sm leading-6">
+                        {result.headline.name} →{" "}
+                        <span
+                          className={
+                            result.headline.decision === "deny"
+                              ? "font-semibold text-red-800"
+                              : result.headline.decision === "require_approval"
+                                ? "font-semibold text-amber-900"
+                                : "font-semibold text-emerald-800"
+                          }
+                        >
+                          {result.headline.decision}
+                        </span>
+                        . {result.headline.reason}
+                      </p>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className={result.pass ? "text-sm text-emerald-800" : "text-sm text-red-800"}>

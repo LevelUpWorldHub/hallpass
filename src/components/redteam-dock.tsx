@@ -50,7 +50,11 @@ export function RedteamDock({ scenarioId }: { scenarioId: string }) {
               <Link href="/bench">Scorecard</Link>
             </Button>
           </div>
-          {summary ? <p className="mt-3 text-sm">{summary}</p> : null}
+          {summary ? (
+            <p className="mt-3 text-sm" aria-live="polite">
+              {summary}
+            </p>
+          ) : null}
         </div>
         {verdict && headline ? (
           <div>
@@ -62,7 +66,7 @@ export function RedteamDock({ scenarioId }: { scenarioId: string }) {
               inference={verdict.inference}
               policySource={verdict.policySource}
             />
-            <p className="sr-only" data-testid="verdict-decision">
+            <p className="sr-only" aria-live="polite" data-testid="verdict-decision">
               {verdict.decision}
             </p>
             <p className="sr-only" data-testid="verdict-inference">

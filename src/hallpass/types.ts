@@ -81,6 +81,9 @@ export interface Verdict {
   /** Set when a model compiled the policy and the rules engine enforced it. */
   policySource?: InferenceSource;
   lookalikeOf?: string;
+  /** What the deterministic engine would have done, kept beside a model verdict. */
+  rulesDecision?: Decision;
+  rulesReason?: string;
 }
 
 export interface AuditEvent {
