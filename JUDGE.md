@@ -62,3 +62,24 @@ Judged after the scorecard reasons, the hybrid checklist, the disagreement line,
 3. Nothing in CI fails if App Check is initialized after `getAI`, or if `PREFER_ON_DEVICE` is removed.
 4. The popup treats every parsed JSON file as imported, including a file the background rejects.
 5. A lookalike payment and an empty URL are specified in the engine and easy to regress without a direct test.
+
+## Round 4
+
+Re-score after the policy guard and the redaction split. This round is Firebase AI Logic hybrid depth.
+
+| Criterion | Score | Why |
+| --- | --- | --- |
+| Technical execution | 8.5 | The gate rejects a partial policy, redaction sentences no longer become rules, and the lookalike host case is tested. Hybrid calls are still a free-text prompt on `PREFER_ON_DEVICE`. The SDK also offers a response schema, a system instruction, cloud model params, `countTokens`, and `usageMetadata`, and HallPass uses none of them. |
+| Design | 8 | The desk, scorecard, and checklist are clear. The hybrid path is a list of missing keys, not a call you can see working. |
+| Impact | 8 | The three checks and the 23-row scorecard are real numbers a visitor can produce. They are not yet stated as a result on the desk. |
+| Idea / originality | 8 | The red team is distinct from Chrome's critic. A single glance still has to find the comparison table to see why. |
+
+**Total: 32.5 / 40** (was 32)
+
+### Top 5 gaps
+
+1. `getGenerativeModel` is only `{ mode: PREFER_ON_DEVICE }`. Cloud fallback has no system instruction and no JSON schema.
+2. Compile and classify ask for JSON in prose. `responseMimeType` and `responseSchema` are the SDK's way to force that shape.
+3. `usageMetadata` and `countTokens` are ignored, so a hybrid answer has no size and no proof the call was measured.
+4. The cloud model is whatever the SDK defaults to. The hackathon default (`gemini-3.5-flash-lite`) is not set on `inCloudParams`.
+5. Nothing fails the build if those surfaces disappear from `firebase.ts`.

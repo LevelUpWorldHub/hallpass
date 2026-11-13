@@ -81,7 +81,7 @@ Sources: [Architecting security for agentic capabilities in Chrome](https://blog
 HallPass is an entry for Google's #BuildHybridAI hackathon. The deadline is Monday, November 30, 2026, 2:00 PM PT.
 
 - **On device.** `getGenerativeModel` is created with `InferenceMode.PREFER_ON_DEVICE` (`mode: "prefer_on_device"`). That uses Gemini Nano through the Chrome Prompt API on Chrome 139 and newer. `initializeDeviceModel()` runs from the Compile click, which is the user gesture Chrome requires. The download can take several minutes the first time.
-- **Cloud fallback.** If Nano is missing or still downloading, the same call uses cloud Gemini. The SDK reports which path ran on `response.inferenceSource`: `on_device` or `in_cloud`. The workbench badge says On-device or Cloud from that field.
+- **Cloud fallback.** If Nano is missing or still downloading, the same call uses cloud Gemini (`gemini-3.5-flash-lite` on `inCloudParams`). The request sets `responseMimeType: application/json` and a `responseSchema`. The SDK reports which path ran on `response.inferenceSource`: `on_device` or `in_cloud`. Token use is read from `usageMetadata` after `countTokens`. The workbench badge says On-device or Cloud from that field.
 - **App Check.** Before any model call, the app calls `initializeAppCheck` with `ReCaptchaEnterpriseProvider`. Turn on enforcement for Firebase AI Logic in the console. Localhost uses the App Check debug provider, documented below. A debug token is never committed.
 - **Rules fallback.** `NEXT_PUBLIC_HALLPASS_INFERENCE=rules`, or a missing Firebase config, compiles and grades with the deterministic engine. GitHub Actions runs the scorecard this way. Twenty-three checks, no network, no key.
 

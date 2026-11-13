@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { exportAuditJson } from "./audit";
 import { hybridFlags, hybridReady, hybridSlots } from "./config";
@@ -6,6 +7,7 @@ import { isPolicy } from "./policy-guard";
 import { evaluate, shouldGate } from "./engine";
 import { firstRunBeats } from "./first-run";
 import { disagreement, raceDeviceDownload, readInferenceSource } from "./hybrid";
+import { CLOUD_MODEL, policyResponseSchema, verdictResponseSchema } from "./hybrid-schema";
 import { actionFromSubmit, fieldTypesFromControls } from "./fields";
 import { detectInjection, isHiddenStyle } from "./injection";
 import { lookalikeOf } from "./lookalike";
@@ -247,6 +249,35 @@ describe("hybrid readiness", () => {
     expect(JSON.stringify(hybridSlots(flags))).not.toContain("secret-key");
     expect(hybridReady({ ...flags, appId: true })).toBe(true);
     expect(hybridReady({ ...flags, appId: true, forcedRules: true })).toBe(false);
+  });
+});
+
+describe("firebase hybrid contract", () => {
+  it("constrains cloud JSON with a schema and names the documented cloud model", () => {
+    const policySchema = JSON.stringify(policyResponseSchema());
+    const verdictSchema = JSON.stringify(verdictResponseSchema());
+    expect(policySchema).toContain("require_approval");
+    expect(policySchema).toContain("whenLookalike");
+    expect(verdictSchema).toContain("reason");
+    expect(CLOUD_MODEL).toBe("gemini-3.5-flash-lite");
+    const source = readFileSync(new URL("./firebase.ts", import.meta.url), "utf8");
+    const appCheck = source.indexOf("initializeAppCheck");
+    const getAI = source.indexOf("getAI(");
+    expect(appCheck).toBeGreaterThan(0);
+    expect(getAI).toBeGreaterThan(appCheck);
+    for (const needle of [
+      "InferenceMode.PREFER_ON_DEVICE",
+      "GoogleAIBackend",
+      "ReCaptchaEnterpriseProvider",
+      "inCloudParams",
+      "systemInstruction",
+      "responseSchema",
+      "countTokens",
+      "usageMetadata",
+      "initializeDeviceModel",
+    ]) {
+      expect(source, needle).toContain(needle);
+    }
   });
 });
 

@@ -10,6 +10,12 @@ import {
   InferenceSource,
   type GenerativeModel,
 } from "firebase/ai";
+import {
+  CLOUD_MODEL,
+  HALLPASS_SYSTEM_INSTRUCTION,
+  policyResponseSchema,
+  verdictResponseSchema,
+} from "./hybrid-schema";
 import { firebasePublicConfig, hybridConfigured, preferredMode, recaptchaSiteKey } from "./config";
 import { compileRules } from "./compile-rules";
 import { evaluate } from "./engine";
@@ -51,7 +57,14 @@ export function ensureFirebase(): GenerativeModel {
     appCheck = null;
   }
   const ai = getAI(app, { backend: new GoogleAIBackend() });
-  model = getGenerativeModel(ai, { mode: InferenceMode.PREFER_ON_DEVICE });
+  model = getGenerativeModel(ai, {
+    mode: InferenceMode.PREFER_ON_DEVICE,
+    inCloudParams: {
+      model: CLOUD_MODEL,
+      systemInstruction: HALLPASS_SYSTEM_INSTRUCTION,
+      generationConfig: { responseMimeType: "application/json" },
+    },
+  });
   void appCheck;
   return model;
 }
@@ -122,8 +135,21 @@ export async function compileGuardrail(
       const detail = error instanceof Error ? error.message : "On-device setup failed.";
       warmNote = `${detail} Asking cloud Gemini through the same hybrid model.`;
     }
-    const result = await generative.generateContent(`${COMPILE_PROMPT}${sourceText.trim()}`);
+    const prompt = `${COMPILE_PROMPT}${sourceText.trim()}`;
+    const counted = await generative.countTokens(prompt).catch(() => null);
+    const result = await generative.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: policyResponseSchema(),
+      },
+    });
     const source = readSource(result.response.inferenceSource);
+    const usage = result.response.usageMetadata;
+    const usageNote =
+      usage || counted
+        ? `Tokens: prompt ${usage?.promptTokenCount ?? counted?.totalTokens ?? "?"}, candidates ${usage?.candidatesTokenCount ?? 0}.`
+        : undefined;
     const text = result.response.text();
     if (!source) {
       return {
@@ -131,8 +157,9 @@ export async function compileGuardrail(
         note: "The model answered, but the SDK did not report on-device or cloud. Kept the rules policy.",
       };
     }
-    const policy = policyFromModel(text, sourceText, source, { model: "gemini-hybrid" });
-    return { policy, note: source === "cloud" ? warmNote : undefined };
+    const policy = policyFromModel(text, sourceText, source, { model: CLOUD_MODEL });
+    const note = [source === "cloud" ? warmNote : undefined, usageNote].filter(Boolean).join(" ");
+    return { policy, note: note || undefined };
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Hybrid inference failed.";
     return {
@@ -159,7 +186,13 @@ Policy:
 ${JSON.stringify({ name: policy.name, defaultDecision: policy.defaultDecision, rules: policy.rules })}
 Action:
 ${JSON.stringify(action)}`;
-    const result = await generative.generateContent(prompt);
+    const result = await generative.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: verdictResponseSchema(),
+      },
+    });
     const source = readSource(result.response.inferenceSource);
     if (!source) return rulesVerdict;
     const parsed = modelVerdictSchema.parse(extractJson(result.response.text()));
@@ -168,7 +201,7 @@ ${JSON.stringify(action)}`;
       reason: parsed.reason,
       ruleId: parsed.ruleId ?? undefined,
       inference: source,
-      model: "gemini-hybrid",
+      model: source === "on_device" ? "gemini-nano" : CLOUD_MODEL,
       policySource: policy.compiledBy,
       lookalikeOf: rulesVerdict.lookalikeOf,
       rulesDecision: rulesVerdict.decision,
