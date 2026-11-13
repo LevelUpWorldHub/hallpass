@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>HallPass</title>
+    <style>
+      :root { color-scheme: light; }
+      body { margin: 0; width: 320px; font-family: ui-sans-serif, system-ui, sans-serif; background: #f3ecdf; color: #1c1915; }
+      header { padding: 14px 14px 8px; }
+      .kicker { margin: 0; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: #8a5a00; }
+      h1 { margin: 4px 0 0; font-family: Georgia, serif; font-size: 28px; font-weight: 560; }
+      main { padding: 0 14px 14px; }
+      .row { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+      button, label.file { border: 1px solid #1b2836; background: #1b2836; color: #f4efe4; border-radius: 999px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
+      button.ghost, label.file.ghost { background: transparent; color: #1b2836; }
+      ul { list-style: none; padding: 0; margin: 10px 0 0; }
+      li { border-top: 1px solid #e0d5c4; padding: 8px 0; font-size: 12px; }
+      .muted { color: #6d6458; }
+      input[type="file"] { display: none; }
+      a { color: #1b2836; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <p class="kicker">Hall monitor</p>
+      <h1>HallPass</h1>
+    </header>
+    <main>
+      <div class="row">
+        <p id="policy">No policy yet</p>
+        <button id="toggle" type="button">Pause</button>
+      </div>
+      <p class="muted" id="status"></p>
+      <div class="row">
+        <label class="file ghost">Import JSON<input id="import" type="file" accept="application/json" /></label>
+        <a id="desk" href="http://127.0.0.1:43123" target="_blank" rel="noreferrer">Open desk</a>
+      </div>
+      <ul id="events"></ul>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>
