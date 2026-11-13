@@ -133,6 +133,7 @@ function compileSentence(sentence: string, index: number): { rules: PolicyRule[]
 
   if (/\b(redact|mask|anonymize|anonymise)\b/.test(text) || /\b(pii|ssn|social security)\b/.test(text)) {
     warnings.push(PII_BOUNDARY);
+    return { rules: [], warnings };
   }
 
   const injection = /hidden instruction|hides instructions|prompt injection|hidden instructions/.test(text);

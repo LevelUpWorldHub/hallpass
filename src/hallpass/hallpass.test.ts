@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { exportAuditJson } from "./audit";
 import { hybridFlags, hybridReady, hybridSlots } from "./config";
 import { compileRules } from "./compile-rules";
+import { isPolicy } from "./policy-guard";
 import { evaluate, shouldGate } from "./engine";
 import { firstRunBeats } from "./first-run";
 import { disagreement, raceDeviceDownload, readInferenceSource } from "./hybrid";
@@ -122,6 +123,55 @@ describe("rules compiler", () => {
     const policy = compileRules("Redact SSNs on the page.", { now: NOW });
     expect(policy.rules).toHaveLength(0);
     expect(policy.warnings.some((warning) => warning.includes("PlainSight"))).toBe(true);
+  });
+
+  it("keeps a real rule when a later sentence is about redaction", () => {
+    const policy = compileRules("Never submit a payment form. Redact SSNs on the page.", { now: NOW });
+    expect(policy.rules.some((rule) => rule.fieldTypes.includes("payment") && rule.decision === "deny")).toBe(true);
+    expect(policy.warnings.some((warning) => warning.includes("PlainSight"))).toBe(true);
+  });
+
+  it("does not turn a redaction command into a deny rule", () => {
+    const policy = compileRules("Never redact SSNs.", { now: NOW });
+    expect(policy.rules).toHaveLength(0);
+  });
+
+  it("lets an ask on hidden instructions stay an ask", () => {
+    const policy = compileRules("Ask me before a click when a page hides instructions.", { now: NOW });
+    expect(policy.rules.some((rule) => rule.whenPromptInjection && rule.decision === "require_approval")).toBe(true);
+  });
+});
+
+describe("policy guard", () => {
+  it("accepts a compiled policy and rejects a partial one", () => {
+    const policy = compileRules("Never submit a payment form.", { now: NOW });
+    expect(isPolicy(policy)).toBe(true);
+    expect(isPolicy({ id: "x", rules: [{}] })).toBe(false);
+    expect(isPolicy({ ...policy, rules: [{ ...policy.rules[0], decision: "block" }] })).toBe(false);
+    expect(isPolicy(null)).toBe(false);
+  });
+});
+
+describe("engine decisions", () => {
+  it("leaves an action with no URL alone and allows a real PayPal host under the lookalike rule", () => {
+    const lookalike = compileRules("Deny payments on lookalike domains.", { now: NOW });
+    expect(evaluate(lookalike, { type: "form_submit", url: "" }).decision).toBe("allow");
+    expect(
+      evaluate(lookalike, {
+        type: "form_submit",
+        url: "https://www.paypal.com/checkout",
+        buttonText: "Pay now",
+        fieldTypes: ["payment"],
+      }).decision,
+    ).toBe("allow");
+    expect(
+      evaluate(lookalike, {
+        type: "form_submit",
+        url: "https://paypa1.com/checkout",
+        buttonText: "Pay now",
+        fieldTypes: ["payment"],
+      }).decision,
+    ).toBe("deny");
   });
 });
 

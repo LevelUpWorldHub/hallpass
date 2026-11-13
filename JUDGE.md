@@ -41,3 +41,24 @@ Judged after the desk drill, the warm-up retry, and the gate tests.
 3. A hybrid verdict can contradict the rules engine and leave no trace of what the tested policy would have done.
 4. Passing rows are silent. Only failures list the step. A perfect card teaches nothing.
 5. Playing the three checks does not write the ledger, so the audit trail is still a separate tour.
+
+## Round 3
+
+Judged after the scorecard reasons, the hybrid checklist, the disagreement line, and ledger filing. This round is the core-correctness layer.
+
+| Criterion | Score | Why |
+| --- | --- | --- |
+| Technical execution | 8 | Warm-up, inference source, the gate, bad model JSON, and the public config slots are tested. A model verdict now keeps the rules decision beside it. An imported policy is still accepted when it only has an id and a rules array, so a rule with no decision can reach the live gate. The Firebase call order is convention, not a test. |
+| Design | 8 | The first screen, the report card, and the Compile checklist now explain themselves. Stamps and rows are clear. The desk still reads as a well-set tool rather than a moment someone would remember. |
+| Impact | 8 | A visitor can watch three checks, read why each one passed, and find them in the ledger. The people it helps are named. The live extension is still a manual load, which is acceptable once the in-browser proof is this direct. |
+| Idea / originality | 8 | The red team is on the scorecard in plain language, which is the original claim. Nothing on the desk yet puts a real host and a lookalike host on the same pass so the difference from a vendor critic is obvious in one glance. |
+
+**Total: 32 / 40** (was 30)
+
+### Top 5 gaps
+
+1. `isPolicy` accepts any object with an id and a rules array. A rule missing a decision can be stored and then thrown on the next click.
+2. Compiler edges are untested: a PII sentence beside a real rule, an "ask" on hidden instructions, and a blank guardrail.
+3. Nothing in CI fails if App Check is initialized after `getAI`, or if `PREFER_ON_DEVICE` is removed.
+4. The popup treats every parsed JSON file as imported, including a file the background rejects.
+5. A lookalike payment and an empty URL are specified in the engine and easy to regress without a direct test.

@@ -129,6 +129,7 @@ var hallpass = (() => {
     const text = sentence.toLowerCase();
     if (/\b(redact|mask|anonymize|anonymise)\b/.test(text) || /\b(pii|ssn|social security)\b/.test(text)) {
       warnings.push(PII_BOUNDARY);
+      return { rules: [], warnings };
     }
     const injection = /hidden instruction|hides instructions|prompt injection|hidden instructions/.test(text);
     const lookalike = /look-?alike|typosquat|homoglyph/.test(text);
@@ -329,7 +330,7 @@ var hallpass = (() => {
     if (!raw || raw === "*" || raw === "*://*" || raw === "<all_urls>") return true;
     const host = hostOf(url);
     if (!host) return false;
-    let hostGlob = raw.replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/\.$/, "");
+    const hostGlob = raw.replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/\.$/, "");
     if (!hostGlob) return false;
     if (hostGlob.startsWith("*.")) {
       const suffix = hostGlob.slice(1);
@@ -853,12 +854,18 @@ var hallpass = (() => {
         };
       });
       const passed = steps.filter((step) => step.pass).length;
+      const headlineStep = steps.find((step) => step.name === scenario.headline) ?? steps[0];
       return {
         id: scenario.id,
         title: scenario.title,
         guardrail: scenario.guardrail,
         page: scenario.page,
         steps,
+        headline: {
+          name: headlineStep?.name ?? scenario.headline,
+          decision: headlineStep?.actual ?? "allow",
+          reason: headlineStep?.reason ?? ""
+        },
         passed,
         failed: steps.length - passed,
         pass: passed === steps.length
@@ -885,6 +892,8 @@ var hallpass = (() => {
         const detail = error instanceof Error ? error.message : "model unavailable";
         return {
           ...fallback,
+          rulesDecision: fallback.decision,
+          rulesReason: fallback.reason,
           reason: `${fallback.reason} Hybrid review failed (${detail}), so the rules engine decided.`
         };
       }

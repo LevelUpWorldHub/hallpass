@@ -37,7 +37,13 @@
     reader.onload = () => {
       try {
         const policy = JSON.parse(String(reader.result));
-        void chrome.runtime.sendMessage({ type: "import-policy", policy }).then(() => render());
+        void chrome.runtime.sendMessage({ type: "import-policy", policy }).then((response) => {
+          if (!response?.ok) {
+            if (statusNode) statusNode.textContent = "That file is not a HallPass policy.";
+            return;
+          }
+          void render();
+        });
       } catch {
         if (statusNode) statusNode.textContent = "That file is not a HallPass policy.";
       }

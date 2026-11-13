@@ -1,5 +1,6 @@
 import { createAuditEvent } from "../../src/hallpass/audit";
 import { evaluate, shouldGate } from "../../src/hallpass/engine";
+import { isPolicy } from "../../src/hallpass/policy-guard";
 import type { AgentAction, AuditEvent, Policy, Verdict } from "../../src/hallpass/types";
 
 interface Stored {
@@ -10,12 +11,6 @@ interface Stored {
 
 const KEY = "hallpass";
 const permits = new Map<string, number>();
-
-function isPolicy(value: unknown): value is Policy {
-  if (!value || typeof value !== "object") return false;
-  const policy = value as Policy;
-  return typeof policy.id === "string" && Array.isArray(policy.rules);
-}
 
 async function read(): Promise<Stored> {
   const stored = await chrome.storage.local.get(KEY);
