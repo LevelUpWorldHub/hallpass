@@ -169,3 +169,24 @@ Lighthouse on the production desk, mobile, `http://127.0.0.1:43129/`: performanc
 3. The extension manifest does not declare an extension-page content security policy.
 4. There is no unit test that a reason containing `<img` stays text.
 5. The workbench still has no one-click deploy file, which is the following docs round after security.
+
+## Round 9
+
+Re-score after Lighthouse. This round is security and privacy.
+
+| Criterion | Score | Why |
+| --- | --- | --- |
+| Technical execution | 9.5 | The gate, the compiler, the hybrid client, and the production build agree. |
+| Design | 9.1 | Unchanged. |
+| Impact | 8.8 | A local ledger that never stores field values is the privacy story. The desk still does not quote the scorecard counts. |
+| Idea / originality | 8.9 | The workbench is specific. The next docs pass should put the measured scorecard next to the rivals. |
+
+**Total: 36.3 / 40** (was 36.0)
+
+### Top 5 gaps
+
+1. Popup reasons are HTML strings. A guardrail reason can carry markup into the extension UI.
+2. The overlay escapes. The popup does not.
+3. Extension pages have no declared content security policy.
+4. Nothing in CI fails if `innerHTML` returns to the popup.
+5. Deploy and the impact numbers are still ahead.

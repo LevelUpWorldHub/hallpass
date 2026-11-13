@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { exportAuditJson } from "./audit";
 import { hybridFlags, hybridReady, hybridSlots } from "./config";
 import { compileRules } from "./compile-rules";
+import { escapeHtml } from "./escape";
 import { isPolicy } from "./policy-guard";
 import { evaluate, shouldGate } from "./engine";
 import { firstRunBeats, lookalikePair } from "./first-run";
@@ -17,6 +18,17 @@ import { check } from "./index";
 import { policyFromModel } from "./schema";
 
 const NOW = "2026-01-01T00:00:00.000Z";
+
+describe("html escape", () => {
+  it("keeps a policy reason from becoming markup", () => {
+    const escaped = escapeHtml(`<img src=x onerror=alert(1)>&"'`);
+    expect(escaped).not.toContain("<");
+    expect(escaped).toContain("&lt;img");
+    const popup = readFileSync("extension/src/popup.ts", "utf8");
+    expect(popup).not.toContain("innerHTML");
+    expect(popup).toContain("reason.textContent = event.verdict.reason");
+  });
+});
 
 describe("url patterns", () => {
   it("treats *.gov as a public-suffix boundary", () => {

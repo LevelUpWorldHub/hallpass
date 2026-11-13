@@ -1,5 +1,19 @@
 "use strict";
 (() => {
+  // src/hallpass/escape.ts
+  function escapeHtml(value) {
+    return value.replace(/[&<>"']/g, (char) => {
+      const map = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      };
+      return map[char] ?? char;
+    });
+  }
+
   // src/hallpass/fields.ts
   var PAYMENT_HINT = /\b(cc-number|cc-exp|cc-csc|cc-name|cardnumber|card-number|cvv|cvc|pan|payment|creditcard|credit-card)\b/i;
   var EMAIL_COMPOSE_NAMES = /^(to|recipient|cc|bcc|subject|body|message|content)$/i;
@@ -274,12 +288,6 @@
         close();
         resolve(false);
       });
-    });
-  }
-  function escapeHtml(value) {
-    return value.replace(/[&<>"']/g, (char) => {
-      const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
-      return map[char] ?? char;
     });
   }
   function fromOverlay(event) {
