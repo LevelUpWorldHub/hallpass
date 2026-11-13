@@ -19,6 +19,16 @@ import { policyFromModel } from "./schema";
 
 const NOW = "2026-01-01T00:00:00.000Z";
 
+describe("deploy config", () => {
+  it("publishes the Next build without embedding a key", () => {
+    const toml = readFileSync("netlify.toml", "utf8");
+    expect(toml).toContain('publish = ".next"');
+    expect(toml).toContain('NODE_VERSION = "22"');
+    expect(toml).toContain('NEXT_PUBLIC_HALLPASS_INFERENCE = "rules"');
+    expect(toml).not.toMatch(/AIza|api[_-]?key\s*=\s*"/i);
+  });
+});
+
 describe("html escape", () => {
   it("keeps a policy reason from becoming markup", () => {
     const escaped = escapeHtml(`<img src=x onerror=alert(1)>&"'`);

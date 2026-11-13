@@ -95,6 +95,20 @@ The default cloud model is the Firebase AI Logic default (`gemini-3.5-flash-lite
 4. Open **Guardrails** and press **Compile**. The badge stays **Rules** until Firebase and App Check are filled in. With them, the same button prefers Gemini Nano and falls back to cloud Gemini.
 5. Load `extension/dist` unpacked if you want the live gate on the red-team buttons. The desk drill and the scorecard do not need it.
 
+## Deploy
+
+The desk is a static-enough Next.js app: every page prerenders, and the rules engine needs no server secret.
+
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/LevelUpWorldHub/hallpass)
+
+The button uses the public mirror. From this tree, the same config is:
+
+```bash
+npx netlify deploy --build
+```
+
+`netlify.toml` builds with `npm run build`, publishes `.next`, pins Node 22, and forces rules mode so a public URL cannot call Gemini without keys you add yourself. To turn hybrid on, set the `NEXT_PUBLIC_FIREBASE_*` and `NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY` values in the Netlify UI, then clear `NEXT_PUBLIC_HALLPASS_INFERENCE`. Leave App Check debug off on that site. Response headers deny framing and sniffing.
+
 ## Run the desk
 
 ```bash

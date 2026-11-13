@@ -190,3 +190,24 @@ Re-score after Lighthouse. This round is security and privacy.
 3. Extension pages have no declared content security policy.
 4. Nothing in CI fails if `innerHTML` returns to the popup.
 5. Deploy and the impact numbers are still ahead.
+
+## Round 10
+
+Re-score after the popup stopped interpolating HTML. This round is docs and one-click deploy.
+
+| Criterion | Score | Why |
+| --- | --- | --- |
+| Technical execution | 9.5 | Unchanged. The extension now renders reasons as text under a declared page CSP. |
+| Design | 9.1 | Unchanged. |
+| Impact | 8.9 | A judge can deploy the rules desk without a Firebase project. The page still does not quote 23/23. |
+| Idea / originality | 9.0 | The demo script opens on the real host versus the lookalike, which is the line the rivals do not draw. |
+
+**Total: 36.5 / 40** (was 36.3)
+
+### Top 5 gaps
+
+1. `netlify.toml` is missing, so a one-click deploy is a guess.
+2. The README stops at local `npm run dev`.
+3. The demo script still opens on a generic denied stamp and misses the two-host shot.
+4. The submission draft does not mention the response schema or the rules-only public deploy.
+5. The desk does not print the scorecard's own 23/23.
