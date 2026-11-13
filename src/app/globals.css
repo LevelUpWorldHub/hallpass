@@ -169,6 +169,23 @@
   box-shadow: inset 0 0 0 1px currentColor;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .stamp {
+    animation: hallpass-stamp 280ms ease-out;
+  }
+}
+
+@keyframes hallpass-stamp {
+  from {
+    transform: rotate(-14deg) scale(1.2);
+    opacity: 0;
+  }
+  to {
+    transform: rotate(-8deg);
+    opacity: 1;
+  }
+}
+
 .ink-grid {
   background-image:
     linear-gradient(oklch(0.86 0.02 80 / 70%) 1px, transparent 1px),

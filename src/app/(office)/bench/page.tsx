@@ -55,7 +55,19 @@ export default function BenchPage() {
                       <p className="font-medium">{result.title}</p>
                       <p className="text-xs text-muted-foreground">{result.guardrail}</p>
                       <p className="mt-1 text-sm leading-6">
-                        {result.headline.name} → {result.headline.decision}. {result.headline.reason}
+                        {result.headline.name} →{" "}
+                        <span
+                          className={
+                            result.headline.decision === "deny"
+                              ? "font-semibold text-red-800"
+                              : result.headline.decision === "require_approval"
+                                ? "font-semibold text-amber-900"
+                                : "font-semibold text-emerald-800"
+                          }
+                        >
+                          {result.headline.decision}
+                        </span>
+                        . {result.headline.reason}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">

@@ -74,8 +74,16 @@ export function FirstDrill() {
   return (
     <div id="first-drill">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[11px] font-semibold tracking-[0.18em] text-[#8a5a00] uppercase">First three checks</p>
-        <Button type="button" variant="outline" className="rounded-full" onClick={play} aria-pressed={playing}>
+        <p className="text-[11px] font-semibold tracking-[0.18em] text-[#8a5a00] uppercase">
+          Check {index + 1} of {BEATS.length} · {beat.title}
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          className="rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8a5a00]"
+          onClick={play}
+          aria-pressed={playing}
+        >
           {playing ? "Pause" : "Play the three checks"}
         </Button>
       </div>
@@ -85,7 +93,7 @@ export function FirstDrill() {
             key={item.id}
             type="button"
             variant={itemIndex === index ? "default" : "outline"}
-            className="rounded-full"
+            className="rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8a5a00]"
             aria-pressed={itemIndex === index}
             onClick={() => choose(itemIndex)}
           >

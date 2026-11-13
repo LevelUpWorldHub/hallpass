@@ -64,7 +64,7 @@ export function HallPassCard({
             </p>
           ) : null}
         </div>
-        <p className={`stamp ${decisionTone(decision)}`} aria-label={decisionLabel(decision)}>
+        <p key={stamp} className={`stamp ${decisionTone(decision)}`} aria-label={decisionLabel(decision)}>
           {stamp}
         </p>
       </div>

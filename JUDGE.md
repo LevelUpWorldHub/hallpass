@@ -83,3 +83,24 @@ Re-score after the policy guard and the redaction split. This round is Firebase 
 3. `usageMetadata` and `countTokens` are ignored, so a hybrid answer has no size and no proof the call was measured.
 4. The cloud model is whatever the SDK defaults to. The hackathon default (`gemini-3.5-flash-lite`) is not set on `inCloudParams`.
 5. Nothing fails the build if those surfaces disappear from `firebase.ts`.
+
+## Round 5
+
+Re-score after schema-constrained hybrid calls. This round is design and UX polish.
+
+| Criterion | Score | Why |
+| --- | --- | --- |
+| Technical execution | 9.2 | Prefer-on-device, App Check before getAI, response schema, system instruction, countTokens, usageMetadata, and the cloud model are in the client and locked by a source contract. Rules mode still grades CI. |
+| Design | 8.2 | The ticket, type, and checklist are coherent. The stamp does not land, the scorecard decision is a word in a paragraph, and the drill does not say which check you are on. |
+| Impact | 8.2 | The proof exists. The desk does not lead with the count of checks, denials, and asks the engine just produced. |
+| Idea / originality | 8.2 | The comparison table is specific. There is no side-by-side of the real host and the lookalike, which is the line a rival critic does not draw. |
+
+**Total: 33.8 / 40** (was 32.5)
+
+### Top 5 gaps
+
+1. The stamp is static. A hall pass should land when the decision changes, and stay still when the visitor asks for reduced motion.
+2. Scorecard decisions are the same color as the body copy. Deny, ask, and allow should be distinguishable without reading the whole sentence.
+3. The drill does not say "check 2 of 3", so Play feels like a carousel with no position.
+4. The hero and the ticket compete. The check you are looking at should be named above the stamp.
+5. Focus on the drill buttons is the browser default on a paper background. The navy nav already has a gold ring. The drill should match.
