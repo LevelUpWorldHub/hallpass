@@ -5,7 +5,7 @@ import { hybridFlags, hybridReady, hybridSlots } from "./config";
 import { compileRules } from "./compile-rules";
 import { isPolicy } from "./policy-guard";
 import { evaluate, shouldGate } from "./engine";
-import { firstRunBeats } from "./first-run";
+import { firstRunBeats, lookalikePair } from "./first-run";
 import { disagreement, raceDeviceDownload, readInferenceSource } from "./hybrid";
 import { CLOUD_MODEL, policyResponseSchema, verdictResponseSchema } from "./hybrid-schema";
 import { actionFromSubmit, fieldTypesFromControls } from "./fields";
@@ -197,6 +197,12 @@ describe("first-run drill", () => {
     const beats = firstRunBeats(NOW);
     expect(beats.map((beat) => beat.decision)).toEqual(["deny", "require_approval", "deny"]);
     expect(beats.map((beat) => beat.id)).toEqual(["no-payment", "email-ask", "lookalike"]);
+  });
+
+  it("allows the real PayPal host and denies the lookalike on the same click", () => {
+    const pair = lookalikePair(NOW);
+    expect(pair.real.verdict.decision).toBe("allow");
+    expect(pair.fake.verdict.decision).toBe("deny");
   });
 });
 

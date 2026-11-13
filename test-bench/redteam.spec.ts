@@ -12,6 +12,9 @@ test("the desk states the problem", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toContainText("hall pass");
   await expect(page.getByRole("link", { name: "Write a guardrail" })).toBeVisible();
   await expect(page.getByTestId("first-drill-decision")).toContainText("deny");
+  await expect(page.getByTestId("lookalike-pair")).toContainText("Allowed");
+  await expect(page.getByTestId("lookalike-pair")).toContainText("Denied");
+  await expect(page.getByTestId("lookalike-pair")).toContainText("paypa1.com");
 });
 
 test("a desk check lands in the ledger", async ({ page }) => {

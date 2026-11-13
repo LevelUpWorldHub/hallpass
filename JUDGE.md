@@ -104,3 +104,24 @@ Re-score after schema-constrained hybrid calls. This round is design and UX poli
 3. The drill does not say "check 2 of 3", so Play feels like a carousel with no position.
 4. The hero and the ticket compete. The check you are looking at should be named above the stamp.
 5. Focus on the drill buttons is the browser default on a paper background. The navy nav already has a gold ring. The drill should match.
+
+## Round 6
+
+Re-score after the stamp, the check counter, and the colored decisions. This round is the demo moment.
+
+| Criterion | Score | Why |
+| --- | --- | --- |
+| Technical execution | 9.2 | Unchanged this round. The hybrid path and the rules engine are both real. |
+| Design | 8.8 | The stamp lands, the drill says which check is up, and decisions have color. The page still explains the product in three cards before it shows the sharpest contrast it can produce. |
+| Impact | 8.4 | A visitor can play three checks. They do not yet see the one comparison that makes the harm concrete: the real host is allowed and the lookalike is not, on the same button. |
+| Idea / originality | 8.6 | The workbench is distinct in the table. The memorable demo, two hosts and one Pay now, is still buried in a scorecard row. |
+
+**Total: 35.0 / 40** (was 33.8)
+
+### Top 5 gaps
+
+1. No side-by-side of `www.paypal.com` allowed and `paypa1.com` denied for the same Pay now click.
+2. The comparison table is prose. The demo should be the engine's actual verdicts, not a written claim.
+3. The moment is not labeled for the video. A judge scanning for ten seconds can miss it under the three steps.
+4. The pair is not in the Playwright path, so a regression can delete it without CI noticing.
+5. The desk still does not say how many checks the full red team runs. That number belongs next to the moment.

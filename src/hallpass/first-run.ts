@@ -1,7 +1,7 @@
 import { compileRules } from "./compile-rules";
 import { evaluate } from "./engine";
 import { SCENARIOS } from "./scenarios";
-import type { AgentAction, Decision, Policy } from "./types";
+import type { AgentAction, Decision, Policy, Verdict } from "./types";
 
 /** The three checks a first-time visitor should see before they read the rest of the desk. */
 export const FIRST_RUN_IDS = ["no-payment", "email-ask", "lookalike"] as const;
@@ -25,6 +25,30 @@ const LABELS: Record<(typeof FIRST_RUN_IDS)[number], string> = {
   "email-ask": "Mail",
   lookalike: "Lookalike",
 };
+
+export interface HostPair {
+  guardrail: string;
+  real: { url: string; verdict: Verdict };
+  fake: { url: string; verdict: Verdict };
+}
+
+/** The same Pay now click on the real host and on a one-character lookalike. */
+export function lookalikePair(now = "2026-01-01T00:00:00.000Z"): HostPair {
+  const guardrail = "Deny payments on lookalike domains.";
+  const policy = compileRules(guardrail, { now, name: "Lookalike" });
+  const pay = (url: string) =>
+    evaluate(policy, {
+      type: "form_submit",
+      url,
+      buttonText: "Pay now",
+      fieldTypes: ["payment"],
+    });
+  return {
+    guardrail,
+    real: { url: "https://www.paypal.com/checkout", verdict: pay("https://www.paypal.com/checkout") },
+    fake: { url: "https://paypa1.com/checkout", verdict: pay("https://paypa1.com/checkout") },
+  };
+}
 
 export function firstRunBeats(now = "2026-01-01T00:00:00.000Z"): FirstRunBeat[] {
   return FIRST_RUN_IDS.map((id) => {

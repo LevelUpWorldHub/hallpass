@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ComparisonTable } from "@/components/comparison";
 import { FirstDrill } from "@/components/first-drill";
+import { LookalikePair } from "@/components/lookalike-pair";
 import { Button } from "@/components/ui/button";
 
 const STEPS = [
@@ -54,6 +55,8 @@ export default function DeskPage() {
           <FirstDrill />
         </div>
       </section>
+
+      <LookalikePair />
 
       <section className="mx-auto grid max-w-6xl gap-4 px-5 py-12 md:grid-cols-3">
         {STEPS.map((step) => (
