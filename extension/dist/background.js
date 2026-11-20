@@ -191,6 +191,8 @@
     if (rule.buttonIntents.length) score += 2;
     if (rule.whenPromptInjection) score += 3;
     if (rule.whenLookalike) score += 3;
+    if (rule.amountAbove !== void 0) score += 2;
+    if (rule.recipientsOutside?.length) score += 2;
     return score;
   }
   function buttonMatches(intents, buttonText) {
@@ -208,6 +210,31 @@
     if (rule.fieldTypes.length && rule.buttonIntents.length) return fieldOk || buttonOk;
     return fieldOk && buttonOk;
   }
+  function domainCovered(domain, allowed) {
+    const host = domain.trim().toLowerCase().replace(/^.*@/, "").replace(/\.$/, "");
+    return allowed.some((entry) => {
+      const base = entry.toLowerCase().replace(/^\*\./, "");
+      return host === base || host.endsWith(`.${base}`);
+    });
+  }
+  function actionAmount(action) {
+    if (typeof action.amount === "number" && Number.isFinite(action.amount)) return action.amount;
+    const match = (action.buttonText ?? "").match(/\$\s*(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?/);
+    if (!match) return void 0;
+    return Number(match[1].replace(/,/g, "")) + (match[2] ? Number(`0.${match[2]}`) : 0);
+  }
+  function amountMatches(rule, action) {
+    if (rule.amountAbove === void 0) return true;
+    const amount = actionAmount(action);
+    if (amount === void 0) return true;
+    return amount > rule.amountAbove;
+  }
+  function recipientsMatch(rule, action) {
+    if (!rule.recipientsOutside?.length) return true;
+    const domains = action.recipientDomains ?? [];
+    if (!domains.length) return true;
+    return domains.some((domain) => !domainCovered(domain, rule.recipientsOutside));
+  }
   function ruleMatches(rule, action, lookalike, injection) {
     if (rule.actionTypes.length && !rule.actionTypes.includes(action.type)) return false;
     if (rule.urlPatterns.length && !rule.urlPatterns.some((pattern) => urlMatches(pattern, actionUrl(action)))) {
@@ -215,6 +242,8 @@
     }
     if (rule.whenPromptInjection && !injection) return false;
     if (rule.whenLookalike && !lookalike) return false;
+    if (!amountMatches(rule, action)) return false;
+    if (!recipientsMatch(rule, action)) return false;
     return signalsMatch(rule, action);
   }
   function pageHasInjection(action) {
@@ -305,6 +334,13 @@
     if (rule.reason.length > 2e3 || rule.description.length > 2e3) return false;
     if (!isStringArray(rule.fieldTypes) || !rule.fieldTypes.every((item) => FIELDS.has(item))) return false;
     if (typeof rule.whenPromptInjection !== "boolean" || typeof rule.whenLookalike !== "boolean") return false;
+    if (rule.amountAbove !== void 0 && (typeof rule.amountAbove !== "number" || !Number.isFinite(rule.amountAbove) || rule.amountAbove < 0)) {
+      return false;
+    }
+    if (rule.recipientsOutside !== void 0) {
+      if (!isStringArray(rule.recipientsOutside) || !rule.recipientsOutside.length || rule.recipientsOutside.length > 24) return false;
+      if (!rule.recipientsOutside.every((domain) => /^(?:\*\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)+$/i.test(domain))) return false;
+    }
     return true;
   }
   function isPolicy(value) {

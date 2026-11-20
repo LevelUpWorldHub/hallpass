@@ -38,6 +38,10 @@ export interface AgentAction {
   fieldTypes?: FieldType[];
   fieldNames?: string[];
   downloadFilename?: string;
+  /** Amount the action would charge, in the page currency. A number only, never card data. */
+  amount?: number;
+  /** Recipient domains for an email action (for example "example.com"). Domains only, never addresses. */
+  recipientDomains?: string[];
   pageSignals?: PageSignals;
   actor?: string;
 }
@@ -55,6 +59,10 @@ export interface PolicyRule {
   buttonIntents: string[];
   whenPromptInjection: boolean;
   whenLookalike: boolean;
+  /** When set, the rule only matches actions whose amount is above this value. Unknown amounts match (fail closed). */
+  amountAbove?: number;
+  /** When set, the rule only matches email actions with a recipient outside these domains. Unknown recipients match. */
+  recipientsOutside?: string[];
   decision: Decision;
   reason: string;
 }

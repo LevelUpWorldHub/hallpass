@@ -21,6 +21,8 @@ export function specificity(rule: PolicyRule): number {
   if (rule.buttonIntents.length) score += 2;
   if (rule.whenPromptInjection) score += 3;
   if (rule.whenLookalike) score += 3;
+  if (rule.amountAbove !== undefined) score += 2;
+  if (rule.recipientsOutside?.length) score += 2;
   return score;
 }
 
@@ -41,6 +43,36 @@ function signalsMatch(rule: PolicyRule, action: AgentAction): boolean {
   return fieldOk && buttonOk;
 }
 
+function domainCovered(domain: string, allowed: string[]): boolean {
+  const host = domain.trim().toLowerCase().replace(/^.*@/, "").replace(/\.$/, "");
+  return allowed.some((entry) => {
+    const base = entry.toLowerCase().replace(/^\*\./, "");
+    return host === base || host.endsWith(`.${base}`);
+  });
+}
+
+/** The action amount, or the first "$12.34" in the button label. */
+export function actionAmount(action: AgentAction): number | undefined {
+  if (typeof action.amount === "number" && Number.isFinite(action.amount)) return action.amount;
+  const match = (action.buttonText ?? "").match(/\$\s*(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?/);
+  if (!match) return undefined;
+  return Number(match[1].replace(/,/g, "")) + (match[2] ? Number(`0.${match[2]}`) : 0);
+}
+
+function amountMatches(rule: PolicyRule, action: AgentAction): boolean {
+  if (rule.amountAbove === undefined) return true;
+  const amount = actionAmount(action);
+  if (amount === undefined) return true;
+  return amount > rule.amountAbove;
+}
+
+function recipientsMatch(rule: PolicyRule, action: AgentAction): boolean {
+  if (!rule.recipientsOutside?.length) return true;
+  const domains = action.recipientDomains ?? [];
+  if (!domains.length) return true;
+  return domains.some((domain) => !domainCovered(domain, rule.recipientsOutside!));
+}
+
 export function ruleMatches(rule: PolicyRule, action: AgentAction, lookalike: string | null, injection: boolean): boolean {
   if (rule.actionTypes.length && !rule.actionTypes.includes(action.type)) return false;
   if (rule.urlPatterns.length && !rule.urlPatterns.some((pattern) => urlMatches(pattern, actionUrl(action)))) {
@@ -48,6 +80,8 @@ export function ruleMatches(rule: PolicyRule, action: AgentAction, lookalike: st
   }
   if (rule.whenPromptInjection && !injection) return false;
   if (rule.whenLookalike && !lookalike) return false;
+  if (!amountMatches(rule, action)) return false;
+  if (!recipientsMatch(rule, action)) return false;
   return signalsMatch(rule, action);
 }
 

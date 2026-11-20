@@ -31,6 +31,22 @@ function urlPatterns(sentence) {
   }
   return [...found];
 }
+function amountThresholdOf(text) {
+  const match = text.match(
+    /(?:more than|over|above|greater than|exceeding|in excess of|>)\s*(?:\$|usd\s*)\s*(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?/i
+  );
+  if (!match) return void 0;
+  const whole = Number(match[1].replace(/,/g, ""));
+  const cents = match[2] ? Number(`0.${match[2]}`) : 0;
+  const value = whole + cents;
+  return Number.isFinite(value) ? value : void 0;
+}
+function mentionsAmount(text) {
+  return /\$\s*\d|\b\d+\s*(?:dollars|usd)\b/i.test(text);
+}
+function isOutsideScope(text) {
+  return /\b(?:outside(?:\s+of)?|except(?:\s+for)?|other than|anyone but|anywhere but|not (?:at|on|in))\b/i.test(text);
+}
 function fieldTypesOf(text) {
   const fields = /* @__PURE__ */ new Set();
   if (/\b(payment|payments|card|cvv|cvc|checkout|purchase)\b/.test(text)) fields.add("payment");
@@ -60,7 +76,7 @@ function buttonIntentsOf(text) {
 }
 function actionTypesOf(text) {
   const types = /* @__PURE__ */ new Set();
-  if (/\b(browse|visit|navigat|go to|open)\b/.test(text)) types.add("navigate");
+  if (/\b(brows\w*|visit\w*|navigat\w*|go to|open)\b/.test(text)) types.add("navigate");
   if (/\bdownload/.test(text)) types.add("download");
   if (/\b(submit|form)\b/.test(text)) types.add("form_submit");
   if (/\bclick\b/.test(text)) types.add("click");
@@ -84,6 +100,8 @@ function rule(draft) {
     buttonIntents: draft.buttonIntents ?? [],
     whenPromptInjection: draft.whenPromptInjection ?? false,
     whenLookalike: draft.whenLookalike ?? false,
+    ...draft.amountAbove !== void 0 ? { amountAbove: draft.amountAbove } : {},
+    ...draft.recipientsOutside?.length ? { recipientsOutside: draft.recipientsOutside } : {},
     decision: draft.decision,
     reason: draft.reason
   };
@@ -109,8 +127,8 @@ function compileSentence(sentence, index) {
   const lookalike = /look-?alike|typosquat|homoglyph/.test(text);
   const onlyBrowse = /\bonly\b/.test(text) && /\b(browse|visit|open|navigat|go)\b/.test(text);
   if (onlyBrowse) {
-    const patterns = urlPatterns(sentence);
-    const allowPatterns = patterns.length ? patterns : ["*"];
+    const patterns2 = urlPatterns(sentence);
+    const allowPatterns = patterns2.length ? patterns2 : ["*"];
     const listed = allowPatterns.join(", ");
     return {
       warnings,
@@ -217,9 +235,64 @@ function compileSentence(sentence, index) {
       ]
     };
   }
-  if (!actions.length) {
-    if (fields.includes("email_compose")) actions = ["form_submit", "click"];
-    else actions = ["form_submit", "click"];
+  if (!actions.length) actions = ["form_submit", "click"];
+  const patterns = urlPatterns(sentence);
+  const threshold = amountThresholdOf(sentence);
+  if (threshold === void 0 && mentionsAmount(sentence)) {
+    warnings.push(`Read an amount in \u201C${sentence.replace(/\.$/, "")}\u201D but not a limit. Write \u201Cmore than $50\u201D to set one.`);
+  }
+  if (patterns.length && isOutsideScope(text)) {
+    const listed = patterns.join(", ");
+    if (fields.includes("email_compose")) {
+      return {
+        warnings,
+        rules: [
+          rule({
+            description: sentence.replace(/\.$/, ""),
+            actionTypes: actions,
+            fieldTypes: fields,
+            buttonIntents: buttons,
+            recipientsOutside: patterns,
+            amountAbove: threshold,
+            decision,
+            reason: `${reasonFor(decision, sentence)} Recipients inside ${listed} are fine.`,
+            source: sentence,
+            index,
+            salt: "outside-mail"
+          })
+        ]
+      };
+    }
+    return {
+      warnings,
+      rules: [
+        rule({
+          description: `Allow ${actions.join(", ")} on ${listed}`,
+          actionTypes: actions,
+          urlPatterns: patterns,
+          fieldTypes: fields,
+          buttonIntents: buttons,
+          decision: "allow",
+          reason: `Inside ${listed}.`,
+          source: sentence,
+          index,
+          salt: "outside-allow"
+        }),
+        rule({
+          description: sentence.replace(/\.$/, ""),
+          actionTypes: actions,
+          urlPatterns: ["*"],
+          fieldTypes: fields,
+          buttonIntents: buttons,
+          amountAbove: threshold,
+          decision,
+          reason: reasonFor(decision, sentence),
+          source: sentence,
+          index,
+          salt: "outside-rest"
+        })
+      ]
+    };
   }
   return {
     warnings,
@@ -227,9 +300,10 @@ function compileSentence(sentence, index) {
       rule({
         description: sentence.replace(/\.$/, ""),
         actionTypes: actions,
-        urlPatterns: urlPatterns(sentence),
+        urlPatterns: patterns,
         fieldTypes: fields,
         buttonIntents: buttons,
+        amountAbove: threshold,
         decision,
         reason: reasonFor(decision, sentence),
         source: sentence,
@@ -445,6 +519,8 @@ function specificity(rule2) {
   if (rule2.buttonIntents.length) score += 2;
   if (rule2.whenPromptInjection) score += 3;
   if (rule2.whenLookalike) score += 3;
+  if (rule2.amountAbove !== void 0) score += 2;
+  if (rule2.recipientsOutside?.length) score += 2;
   return score;
 }
 function buttonMatches(intents, buttonText) {
@@ -462,6 +538,31 @@ function signalsMatch(rule2, action) {
   if (rule2.fieldTypes.length && rule2.buttonIntents.length) return fieldOk || buttonOk;
   return fieldOk && buttonOk;
 }
+function domainCovered(domain, allowed) {
+  const host = domain.trim().toLowerCase().replace(/^.*@/, "").replace(/\.$/, "");
+  return allowed.some((entry) => {
+    const base = entry.toLowerCase().replace(/^\*\./, "");
+    return host === base || host.endsWith(`.${base}`);
+  });
+}
+function actionAmount(action) {
+  if (typeof action.amount === "number" && Number.isFinite(action.amount)) return action.amount;
+  const match = (action.buttonText ?? "").match(/\$\s*(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?/);
+  if (!match) return void 0;
+  return Number(match[1].replace(/,/g, "")) + (match[2] ? Number(`0.${match[2]}`) : 0);
+}
+function amountMatches(rule2, action) {
+  if (rule2.amountAbove === void 0) return true;
+  const amount = actionAmount(action);
+  if (amount === void 0) return true;
+  return amount > rule2.amountAbove;
+}
+function recipientsMatch(rule2, action) {
+  if (!rule2.recipientsOutside?.length) return true;
+  const domains = action.recipientDomains ?? [];
+  if (!domains.length) return true;
+  return domains.some((domain) => !domainCovered(domain, rule2.recipientsOutside));
+}
 function ruleMatches(rule2, action, lookalike, injection) {
   if (rule2.actionTypes.length && !rule2.actionTypes.includes(action.type)) return false;
   if (rule2.urlPatterns.length && !rule2.urlPatterns.some((pattern) => urlMatches(pattern, actionUrl(action)))) {
@@ -469,6 +570,8 @@ function ruleMatches(rule2, action, lookalike, injection) {
   }
   if (rule2.whenPromptInjection && !injection) return false;
   if (rule2.whenLookalike && !lookalike) return false;
+  if (!amountMatches(rule2, action)) return false;
+  if (!recipientsMatch(rule2, action)) return false;
   return signalsMatch(rule2, action);
 }
 function pageHasInjection(action) {

@@ -44,6 +44,27 @@ function urlPatterns(sentence: string): string[] {
   return [...found];
 }
 
+/** "more than $50", "over $1,000", "above $20.50", "> $50" -> 50, 1000, 20.5, 50. */
+export function amountThresholdOf(text: string): number | undefined {
+  const match = text.match(
+    /(?:more than|over|above|greater than|exceeding|in excess of|>)\s*(?:\$|usd\s*)\s*(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?/i,
+  );
+  if (!match) return undefined;
+  const whole = Number(match[1].replace(/,/g, ""));
+  const cents = match[2] ? Number(`0.${match[2]}`) : 0;
+  const value = whole + cents;
+  return Number.isFinite(value) ? value : undefined;
+}
+
+function mentionsAmount(text: string): boolean {
+  return /\$\s*\d|\b\d+\s*(?:dollars|usd)\b/i.test(text);
+}
+
+/** "outside example.com", "except example.com", "other than", "anyone but", "not at". */
+function isOutsideScope(text: string): boolean {
+  return /\b(?:outside(?:\s+of)?|except(?:\s+for)?|other than|anyone but|anywhere but|not (?:at|on|in))\b/i.test(text);
+}
+
 function fieldTypesOf(text: string): FieldType[] {
   const fields = new Set<FieldType>();
   if (/\b(payment|payments|card|cvv|cvc|checkout|purchase)\b/.test(text)) fields.add("payment");
@@ -75,7 +96,7 @@ function buttonIntentsOf(text: string): string[] {
 
 function actionTypesOf(text: string): ActionType[] {
   const types = new Set<ActionType>();
-  if (/\b(browse|visit|navigat|go to|open)\b/.test(text)) types.add("navigate");
+  if (/\b(brows\w*|visit\w*|navigat\w*|go to|open)\b/.test(text)) types.add("navigate");
   if (/\bdownload/.test(text)) types.add("download");
   if (/\b(submit|form)\b/.test(text)) types.add("form_submit");
   if (/\bclick\b/.test(text)) types.add("click");
@@ -98,6 +119,8 @@ interface RuleDraft {
   buttonIntents?: string[];
   whenPromptInjection?: boolean;
   whenLookalike?: boolean;
+  amountAbove?: number;
+  recipientsOutside?: string[];
   decision: Decision;
   reason: string;
   source: string;
@@ -115,6 +138,8 @@ function rule(draft: RuleDraft): PolicyRule {
     buttonIntents: draft.buttonIntents ?? [],
     whenPromptInjection: draft.whenPromptInjection ?? false,
     whenLookalike: draft.whenLookalike ?? false,
+    ...(draft.amountAbove !== undefined ? { amountAbove: draft.amountAbove } : {}),
+    ...(draft.recipientsOutside?.length ? { recipientsOutside: draft.recipientsOutside } : {}),
     decision: draft.decision,
     reason: draft.reason,
   };
@@ -259,9 +284,66 @@ function compileSentence(sentence: string, index: number): { rules: PolicyRule[]
     };
   }
 
-  if (!actions.length) {
-    if (fields.includes("email_compose")) actions = ["form_submit", "click"];
-    else actions = ["form_submit", "click"];
+  if (!actions.length) actions = ["form_submit", "click"];
+
+  const patterns = urlPatterns(sentence);
+  const threshold = amountThresholdOf(sentence);
+  if (threshold === undefined && mentionsAmount(sentence)) {
+    warnings.push(`Read an amount in “${sentence.replace(/\.$/, "")}” but not a limit. Write “more than $50” to set one.`);
+  }
+
+  if (patterns.length && isOutsideScope(text)) {
+    const listed = patterns.join(", ");
+    if (fields.includes("email_compose")) {
+      return {
+        warnings,
+        rules: [
+          rule({
+            description: sentence.replace(/\.$/, ""),
+            actionTypes: actions,
+            fieldTypes: fields,
+            buttonIntents: buttons,
+            recipientsOutside: patterns,
+            amountAbove: threshold,
+            decision,
+            reason: `${reasonFor(decision, sentence)} Recipients inside ${listed} are fine.`,
+            source: sentence,
+            index,
+            salt: "outside-mail",
+          }),
+        ],
+      };
+    }
+    return {
+      warnings,
+      rules: [
+        rule({
+          description: `Allow ${actions.join(", ")} on ${listed}`,
+          actionTypes: actions,
+          urlPatterns: patterns,
+          fieldTypes: fields,
+          buttonIntents: buttons,
+          decision: "allow",
+          reason: `Inside ${listed}.`,
+          source: sentence,
+          index,
+          salt: "outside-allow",
+        }),
+        rule({
+          description: sentence.replace(/\.$/, ""),
+          actionTypes: actions,
+          urlPatterns: ["*"],
+          fieldTypes: fields,
+          buttonIntents: buttons,
+          amountAbove: threshold,
+          decision,
+          reason: reasonFor(decision, sentence),
+          source: sentence,
+          index,
+          salt: "outside-rest",
+        }),
+      ],
+    };
   }
 
   return {
@@ -270,9 +352,10 @@ function compileSentence(sentence: string, index: number): { rules: PolicyRule[]
       rule({
         description: sentence.replace(/\.$/, ""),
         actionTypes: actions,
-        urlPatterns: urlPatterns(sentence),
+        urlPatterns: patterns,
         fieldTypes: fields,
         buttonIntents: buttons,
+        amountAbove: threshold,
         decision,
         reason: reasonFor(decision, sentence),
         source: sentence,

@@ -1,5 +1,7 @@
 # HallPass
 
+**Live demo:** [https://hallpass-hybridai.vercel.app](https://hallpass-hybridai.vercel.app)
+
 Browser agents click, pay, send, and download inside a logged-in Chrome. HallPass is the hall monitor: a workbench for writing those guardrails, failing them on purpose, and enforcing them for any agent that acts in the page.
 
 It is a workbench, not a second copy of Chrome's built-in critic. Chrome's [User Alignment Critic](https://blog.google/security/architecting-security-for-agentic/) checks whether Gemini in Chrome's next action matches the user's task. [veto-browse](https://github.com/PlawIO/veto-browse) and [chrome-use](https://github.com/leeguooooo/chrome-use) each guard their own agent. HallPass is the bench you open when the agent is someone else's: Gemini in Chrome, a Playwright or computer-use loop, veto-browse, chrome-use, or a custom extension.
@@ -213,4 +215,4 @@ const verdict = await check(
 
 ## License
 
-Apache License 2.0. Copyright 2026 LevelUpWorldHub. See [LICENSE](LICENSE).
+Apache License 2.0. Copyright 2026 LevelUpWorldHub. See [LICENSE](LICENSE) and [NOTICE](NOTICE).

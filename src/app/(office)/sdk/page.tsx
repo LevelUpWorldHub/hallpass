@@ -59,10 +59,10 @@ export default function SdkPage() {
   }
 
   return (
-    <main className="mx-auto grid max-w-6xl gap-8 px-5 py-8 lg:grid-cols-2">
+    <main className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-8 px-5 py-8 lg:grid-cols-2">
       <div>
         <p className="text-[11px] font-semibold tracking-[0.22em] text-muted-foreground uppercase">SDK</p>
-        <h1 className="font-display mt-2 text-4xl text-primary">hallpass.check(action)</h1>
+        <h1 className="font-display mt-2 text-3xl [overflow-wrap:anywhere] text-primary sm:text-4xl">hallpass.check(action)</h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
           Agent builders call this before they click, submit, navigate, or download. Pass{" "}
           <code className="font-mono text-xs">mode: &quot;rules&quot;</code> in CI. Pass{" "}

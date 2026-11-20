@@ -23,6 +23,13 @@ function isRule(value: unknown): value is PolicyRule {
   if (rule.reason.length > 2000 || rule.description.length > 2000) return false;
   if (!isStringArray(rule.fieldTypes) || !rule.fieldTypes.every((item) => FIELDS.has(item))) return false;
   if (typeof rule.whenPromptInjection !== "boolean" || typeof rule.whenLookalike !== "boolean") return false;
+  if (rule.amountAbove !== undefined && (typeof rule.amountAbove !== "number" || !Number.isFinite(rule.amountAbove) || rule.amountAbove < 0)) {
+    return false;
+  }
+  if (rule.recipientsOutside !== undefined) {
+    if (!isStringArray(rule.recipientsOutside) || !rule.recipientsOutside.length || rule.recipientsOutside.length > 24) return false;
+    if (!rule.recipientsOutside.every((domain) => /^(?:\*\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)+$/i.test(domain))) return false;
+  }
   return true;
 }
 
